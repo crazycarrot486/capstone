@@ -13,3 +13,4 @@ requests
 flask-cors
 pandas
 Pillow
+openpyxl
