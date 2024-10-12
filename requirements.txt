@@ -11,3 +11,4 @@ werkzeug==2.2.2 ; python_version >= '3.7'
 zipp==3.11.0 ; python_version >= '3.7'
 requests
 flask-cors
+pandas
