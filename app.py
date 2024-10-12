@@ -25,8 +25,8 @@ API_URL_FLUX = "https://api-inference.huggingface.co/models/black-forest-labs/FL
 headers_flux = {"Authorization": "Bearer hf_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"}
 
 # 파일 경로 수정
-clothing_recommendation_file = '/app/deploy/clothes.xlsx'
-color_recommendation_file = '/app/deploy/color.xlsx'
+clothing_recommendation_file = os.path.join(app.root_path, 'clothes.xlsx')
+color_recommendation_file = os.path.join(app.root_path, 'color.xlsx')
 
 
 # 엑셀 파일을 불러오기
