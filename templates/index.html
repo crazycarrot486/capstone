@@ -3,82 +3,128 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI로 나만의 옷장 채우기</title>
-    <link rel="stylesheet" href="assets/css/bootstrap.min.css">
+    <title>AI Closet</title>
+
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@700&display=swap" rel="stylesheet">
+
     <style>
+        body, h1, h2, p, label, input, button {
+            font-family: 'Noto Sans KR', sans-serif !important;
+            font-weight: 700;
+            color: #000;
+            margin: 0;
+            padding: 0;
+        }
+
+        h1, h2 {
+            font-weight: 700 !important;
+        }
+
+        .top-banner {
+            background-color: #fff;
+            color: #000;
+            text-align: center;
+            padding: 40px 0;
+            font-size: 36px;
+            letter-spacing: 1px;
+            border-bottom: 1px solid #ddd;
+            margin-bottom: 50px;
+        }
+
         .container {
             max-width: 800px;
             margin: 0 auto;
+            padding: 50px 20px;
             text-align: center;
-            padding: 50px 0;
         }
-        .top-banner {
-            background-color: #002366;
-            color: white;
-            text-align: center;
-            padding: 30px 0;
+
+        p {
             font-size: 20px;
-            margin-bottom: 40px;
+            line-height: 1.6;
         }
+
         .dropzone {
             width: 100%;
             height: 300px;
-            background-color: #f1f1f1;
-            border: 2px dashed #ccc;
+            background-color: #ccc;
+            border: 2px dashed #aaa;
             display: flex;
             align-items: center;
             justify-content: center;
-            color: #aaa;
-            font-size: 18px;
-            margin-top: 20px;
+            color: #666;
+            font-size: 20px;
+            margin-top: 40px;
             background-size: contain;
             background-repeat: no-repeat;
             background-position: center;
             position: relative;
+            transition: background-color 0.3s ease;
         }
+
         .dropzone.dragover {
-            background-color: #e1e1e1;
+            background-color: #bbb;
             border-color: #333;
         }
-        .dropzone p {
-            margin: 0;
-            position: absolute;
-        }
+
         .radio-group {
             margin: 20px 0;
             display: flex;
             justify-content: center;
             gap: 20px;
         }
+
+        .radio-group label {
+            font-size: 18px;
+        }
+
         .btn {
-            padding: 10px 20px;
+            padding: 12px 30px;
             font-size: 16px;
             color: #fff;
-            background-color: #007bff;
+            background-color: #000;
             border: none;
             border-radius: 5px;
             cursor: pointer;
-            margin-top: 20px;
+            margin-top: 30px;
+            transition: background-color 0.3s ease, box-shadow 0.3s ease;
+            font-family: 'Bodoni Moda', serif !important;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
         }
+
+        .btn:active {
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+            transform: translateY(2px);
+        }
+
+        .btn:hover {
+            background-color: #333;
+            box-shadow: 0 6px 8px rgba(0, 0, 0, 0.4);
+        }
+
         .footer {
-            background-color: #002366;
-            color: white;
+            background-color: #000;
+            color: #fff;
             text-align: center;
-            padding: 10px 0;
+            padding: 20px 0;
             font-size: 10px;
-            margin-top: 40px;
+            margin-top: 50px;
+            border-top: 1px solid #fff;
+        }
+
+        .footer * {
+            color: #fff !important;
         }
     </style>
 </head>
 <body>
 
     <div class="top-banner">
-        <h1>AI로 나만의 옷장 채우기</h1>
+        <h1>AI Closet</h1>
     </div>
 
     <div class="container">
-        <p>이미지를 드래그하세요!</p>
-
+        <h1>AI와 함께 나만의 옷장을 채워보세요!</h1>
         <form id="upload-form" action="" method="POST" enctype="multipart/form-data">
             <div id="dropzone" class="dropzone">
                 <p id="dropzone-text">여기에 이미지를 드랍하세요!</p>
@@ -100,10 +146,7 @@
         </form>
     </div>
 
-    <div class="footer">
-        <p>제작자: 서울과학기술대학교 최희수, 홍효석</p>
-        <p>2024 서울과학기술대학교 산업정보시스템전공 캡스톤디자인</p>
-    </div>
+    <div class="footer"></div>
 
     <script>
         const dropzone = document.getElementById('dropzone');
@@ -146,38 +189,34 @@
         });
 
         analyzeBtn.addEventListener('click', () => {
-    const formData = new FormData(document.getElementById('upload-form'));
+            const formData = new FormData(document.getElementById('upload-form'));
 
-    fetch('http://localhost:5000/analyze', {
-        method: 'POST',
-        body: formData,
-        headers: {
-            'Accept': 'application/json',
-            'X-Requested-With': 'XMLHttpRequest'
-        }
-    })
-    .then(response => {
-        console.log("서버 응답 상태 코드:", response.status);
-        if (!response.ok) {
-            throw new Error(`서버 오류: ${response.status}`);
-        }
-        return response.json();
-    })
-    .then(data => {
-        console.log("서버 응답 데이터:", data);
-        if (data.success) {
-            // 서버에서 받은 절대 경로 redirect_url로 리다이렉트
-            window.location.href = data.redirect_url;
-        } else {
-            alert(`분석 중 오류가 발생했습니다: ${data.error}`);
-        }
-    })
-    .catch(error => {
-        console.error('서버 요청 중 오류 발생:', error);
-        alert(`서버 요청 중 오류가 발생했습니다: ${error.message}`);
-    });
-});
-
+            fetch('http://localhost:5000/analyze', {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`서버 오류: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.success) {
+                    window.location.href = data.redirect_url;
+                } else {
+                    alert(`분석 중 오류가 발생했습니다: ${data.error}`);
+                }
+            })
+            .catch(error => {
+                console.error('서버 요청 중 오류 발생:', error);
+                alert(`서버 요청 중 오류가 발생했습니다: ${error.message}`);
+            });
+        });
     </script>
 
 </body>
