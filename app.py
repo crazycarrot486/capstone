@@ -1,7 +1,7 @@
 import os
 import base64
 import requests
-from flask import Flask, request, jsonify, render_template
+from flask import Flask, request, jsonify, render_template, url_for
 from werkzeug.utils import secure_filename
 from flask_cors import CORS
 import pandas as pd
@@ -77,8 +77,14 @@ def analyze():
 
             if output:
                 app.logger.info(f'Analysis result: {output}')
-                # 분석 결과에 따라 적절한 경로로 리디렉션
-                return jsonify({"success": True, "redirect_url": "/top_analyze.html"})
+
+                # 분석 결과에 따라 상의 또는 하의 페이지로 리디렉션
+                if "shirt" in output["labels"]:  # 상의 분석 결과일 경우
+                    return jsonify({"success": True, "redirect_url": "/top_analyze.html"})
+                elif "pants" in output["labels"]:  # 하의 분석 결과일 경우
+                    return jsonify({"success": True, "redirect_url": "/bottom_analyze.html"})
+                else:
+                    return jsonify({"error": "Analysis result not recognized"}), 400
             else:
                 app.logger.error('Failed to analyze image, no output from API.')
                 return jsonify({"error": "Failed to analyze image"}), 500
@@ -92,11 +98,17 @@ def analyze():
 # 결과 페이지 처리
 @app.route('/top_analyze.html')
 def result_top():
-    return render_template('top_analyze.html')
+    # 분석된 이미지 경로 및 결과 텍스트 전달
+    image_url = url_for('static', filename='uploads/uploaded_image.jpg')
+    result_sentence = "이 옷은 상의입니다."
+    return render_template('top_analyze.html', image_url=image_url, result_sentence=result_sentence)
 
 @app.route('/bottom_analyze.html')
 def result_bottom():
-    return render_template('bottom_analyze.html')
+    # 분석된 이미지 경로 및 결과 텍스트 전달
+    image_url = url_for('static', filename='uploads/uploaded_image.jpg')
+    result_sentence = "이 옷은 하의입니다."
+    return render_template('bottom_analyze.html', image_url=image_url, result_sentence=result_sentence)
 
 if __name__ == '__main__':
     if not os.path.exists(UPLOAD_FOLDER):
