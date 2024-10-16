@@ -68,19 +68,18 @@ def analyze():
             if output:
                 app.logger.info(f'Analysis result: {output}')
                 
-                # Output 검증
-                if isinstance(output, dict) and "labels" in output and isinstance(output["labels"], list):
-                    labels = output["labels"]
-                    result_label = labels[0] if len(labels) > 0 else "Unknown"
+                # 리스트의 첫 번째 값 처리
+                if isinstance(output, list) and len(output) > 0:
+                    result_label = output[0]  # 리스트의 첫 번째 값을 사용
                     image_url = url_for('static', filename=f'uploads/{filename}')
                     result_sentence = f"이 옷은 {result_label}입니다."
 
-                    if "shirt" in labels:
+                    if "shirt" in result_label:
                         return jsonify({
                             "success": True, 
                             "redirect_url": url_for('result_top', image_url=image_url, result_sentence=result_sentence)
                         })
-                    elif "pants" in labels:
+                    elif "pants" in result_label:
                         return jsonify({
                             "success": True, 
                             "redirect_url": url_for('result_bottom', image_url=image_url, result_sentence=result_sentence)
@@ -117,6 +116,7 @@ if __name__ == '__main__':
     if not os.path.exists(UPLOAD_FOLDER):
         os.makedirs(UPLOAD_FOLDER)
     app.run(debug=True)
+
 
 
 
