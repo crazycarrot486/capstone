@@ -66,26 +66,24 @@ def analyze():
             output = query_fashion_clip(file_path, candidate_labels)
 
             if output:
-                app.logger.info(f'Analysis result: {output}')  # output을 로그로 출력하여 데이터 구조 확인
+                app.logger.info(f'Analysis result: {output}')
 
-                # output이 비어 있지 않으면 처리
-                if isinstance(output, dict):
-                    app.logger.info(f'Output is a dictionary: {output}')
-                    if "labels" in output:
-                        labels = output["labels"]
-                        if "shirt" in labels:
-                            return jsonify({"success": True, "redirect_url": "/top_analyze.html"})
-                        elif "pants" in labels:
-                            return jsonify({"success": True, "redirect_url": "/bottom_analyze.html"})
-                        else:
-                            app.logger.error('No matching labels found in output.')
-                            return jsonify({"error": "No matching labels found"}), 400
-                    else:
-                        app.logger.error('No "labels" key in output.')
-                        return jsonify({"error": '"labels" key missing in output'}), 400
+                # 여기에 분석된 이미지 및 결과 텍스트를 백엔드에서 프론트엔드로 전달
+                image_url = url_for('static', filename=f'uploads/{filename}')
+                result_sentence = f"이 옷은 {output['labels'][0]}입니다."
+
+                if "shirt" in output["labels"]:  # 상의 분석 결과일 경우
+                    return jsonify({
+                        "success": True, 
+                        "redirect_url": url_for('result_top', image_url=image_url, result_sentence=result_sentence)
+                    })
+                elif "pants" in output["labels"]:  # 하의 분석 결과일 경우
+                    return jsonify({
+                        "success": True, 
+                        "redirect_url": url_for('result_bottom', image_url=image_url, result_sentence=result_sentence)
+                    })
                 else:
-                    app.logger.error(f'Output is not a dictionary: {output}')
-                    return jsonify({"error": "Invalid output format"}), 500
+                    return jsonify({"error": "Analysis result not recognized"}), 400
             else:
                 app.logger.error('Failed to analyze image, no output from API.')
                 return jsonify({"error": "Failed to analyze image"}), 500
@@ -99,14 +97,14 @@ def analyze():
 # 결과 페이지 처리
 @app.route('/top_analyze.html')
 def result_top():
-    image_url = url_for('static', filename='uploads/uploaded_image.jpg')
-    result_sentence = "이 옷은 상의입니다."
+    image_url = request.args.get('image_url')
+    result_sentence = request.args.get('result_sentence')
     return render_template('top_analyze.html', image_url=image_url, result_sentence=result_sentence)
 
 @app.route('/bottom_analyze.html')
 def result_bottom():
-    image_url = url_for('static', filename='uploads/uploaded_image.jpg')
-    result_sentence = "이 옷은 하의입니다."
+    image_url = request.args.get('image_url')
+    result_sentence = request.args.get('result_sentence')
     return render_template('bottom_analyze.html', image_url=image_url, result_sentence=result_sentence)
 
 if __name__ == '__main__':
