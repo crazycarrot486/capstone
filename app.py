@@ -3,10 +3,12 @@ import base64
 import requests
 from flask import Flask, request, jsonify, url_for, send_from_directory, render_template
 from werkzeug.utils import secure_filename
-from flask_cors import CORS
+from flask_cors import CORS  # CORS 모듈 추가
 import pandas as pd
 
 app = Flask(__name__, static_folder='static')
+
+# CORS 설정: 모든 경로와 모든 출처에 대해 허용
 CORS(app)
 
 UPLOAD_FOLDER = os.path.join(app.root_path, 'static', 'uploads')
@@ -17,7 +19,7 @@ app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 API_URL = "https://api-inference.huggingface.co/models/patrickjohncyh/fashion-clip"
 headers = {"Authorization": "Bearer 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"}
 
-# 엑셀 파일 경로 (상의, 하의, 색상 추천 데이터를 위한 경로)
+# 엑셀 파일 경로
 clothing_recommendation_file = os.path.join(app.root_path, 'deploy', 'clothes.xlsx')
 color_recommendation_file = os.path.join(app.root_path, 'deploy', 'color.xlsx')
 image_recommendation_file = os.path.join(app.root_path, 'deploy', 'image.xlsx')
@@ -27,9 +29,11 @@ clothing_recommendation_df = pd.read_excel(clothing_recommendation_file, sheet_n
 color_recommendation_df = pd.read_excel(color_recommendation_file, sheet_name='Sheet1')
 image_df = pd.read_excel(image_recommendation_file, sheet_name='Final')
 
+# 허용된 파일 형식 확인 함수
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
+# 패션 클립 API 호출 함수
 def query_fashion_clip(image_path, candidate_labels):
     try:
         with open(image_path, "rb") as f:
@@ -52,6 +56,7 @@ def query_fashion_clip(image_path, candidate_labels):
 def home():
     return "API Server is running"
 
+# 분석 요청 처리
 @app.route('/analyze', methods=['POST', 'OPTIONS'])
 def analyze():
     if request.method == 'OPTIONS':
@@ -126,5 +131,4 @@ if __name__ == '__main__':
     if not os.path.exists(UPLOAD_FOLDER):
         os.makedirs(UPLOAD_FOLDER)
     app.run(debug=True)
-
 
