@@ -8,8 +8,8 @@ import pandas as pd
 
 app = Flask(__name__, static_folder='static')
 
-# CORS 설정: 필요한 경로에만 CORS를 허용
-CORS(app, resources={r"/analyze": {"origins": "*"}})
+# CORS 설정: 모든 경로와 모든 메서드에 대해 허용
+CORS(app, resources={r"/*": {"origins": "*"}})
 
 UPLOAD_FOLDER = os.path.join(app.root_path, 'static', 'uploads')
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'webp'}
@@ -49,8 +49,12 @@ def query_fashion_clip(image_path, candidate_labels):
         app.logger.error(f"API 호출 중 오류 발생: {e}")
         return None
 
-@app.route('/analyze', methods=['POST'])
+@app.route('/analyze', methods=['POST', 'OPTIONS'])
 def analyze():
+    if request.method == 'OPTIONS':
+        # Preflight request에 대한 처리
+        return jsonify({"status": "OK"}), 200
+
     if 'file' not in request.files:
         return jsonify({"error": "No file part"}), 400
     file = request.files['file']
