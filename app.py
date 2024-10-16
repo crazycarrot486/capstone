@@ -67,34 +67,26 @@ def analyze():
 
             if output:
                 app.logger.info(f'Analysis result: {output}')
-
-                # output['labels']가 리스트인지 확인
-                if "labels" in output and isinstance(output["labels"], list):
+                
+                # Output 검증
+                if isinstance(output, dict) and "labels" in output and isinstance(output["labels"], list):
                     labels = output["labels"]
+                    result_label = labels[0] if len(labels) > 0 else "Unknown"
+                    image_url = url_for('static', filename=f'uploads/{filename}')
+                    result_sentence = f"이 옷은 {result_label}입니다."
 
-                    # 첫 번째 label을 사용
-                    if len(labels) > 0:
-                        result_label = labels[0]  # 리스트의 첫 번째 값 가져오기
-                        image_url = url_for('static', filename=f'uploads/{filename}')
-                        result_sentence = f"이 옷은 {result_label}입니다."
-
-                        # 결과에 따라 리디렉션
-                        if result_label == "shirt":
-                            return jsonify({
-                                "success": True, 
-                                "redirect_url": url_for('result_top', image_url=image_url, result_sentence=result_sentence)
-                            })
-                        elif result_label == "pants":
-                            return jsonify({
-                                "success": True, 
-                                "redirect_url": url_for('result_bottom', image_url=image_url, result_sentence=result_sentence)
-                            })
-                        else:
-                            app.logger.error('알 수 없는 결과입니다.')
-                            return jsonify({"error": "Unknown analysis result"}), 400
+                    if "shirt" in labels:
+                        return jsonify({
+                            "success": True, 
+                            "redirect_url": url_for('result_top', image_url=image_url, result_sentence=result_sentence)
+                        })
+                    elif "pants" in labels:
+                        return jsonify({
+                            "success": True, 
+                            "redirect_url": url_for('result_bottom', image_url=image_url, result_sentence=result_sentence)
+                        })
                     else:
-                        app.logger.error('분석 결과가 비어 있습니다.')
-                        return jsonify({"error": "No analysis result"}), 400
+                        return jsonify({"error": "Unknown analysis result"}), 400
                 else:
                     app.logger.error(f"Invalid output format: {output}")
                     return jsonify({"error": "Invalid output format"}), 500
@@ -125,6 +117,7 @@ if __name__ == '__main__':
     if not os.path.exists(UPLOAD_FOLDER):
         os.makedirs(UPLOAD_FOLDER)
     app.run(debug=True)
+
 
 
 
