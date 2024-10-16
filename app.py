@@ -39,10 +39,6 @@ def query_fashion_clip(image_path, candidate_labels):
         app.logger.error(f"API 호출 중 오류 발생: {e}")
         return None
 
-@app.route('/')
-def home():
-    return "API Server is running"
-
 @app.route('/analyze', methods=['POST', 'OPTIONS'])
 def analyze():
     if request.method == 'OPTIONS':
@@ -68,24 +64,18 @@ def analyze():
             if output:
                 app.logger.info(f'Analysis result: {output}')
                 
-                # 리스트의 첫 번째 값 처리
+                # Output이 리스트 형식인지 확인하고, 그 값도 확인
                 if isinstance(output, list) and len(output) > 0:
                     result_label = output[0]  # 리스트의 첫 번째 값을 사용
-                    image_url = url_for('static', filename=f'uploads/{filename}')
-                    result_sentence = f"이 옷은 {result_label}입니다."
+                    app.logger.info(f'Result label: {result_label}')  # result_label 로그로 출력
 
-                    if "shirt" in result_label:
-                        return jsonify({
-                            "success": True, 
-                            "redirect_url": url_for('result_top', image_url=image_url, result_sentence=result_sentence)
-                        })
-                    elif "pants" in result_label:
-                        return jsonify({
-                            "success": True, 
-                            "redirect_url": url_for('result_bottom', image_url=image_url, result_sentence=result_sentence)
-                        })
-                    else:
-                        return jsonify({"error": "Unknown analysis result"}), 400
+                    # result_label을 그대로 반환하여 분석 결과 확인
+                    return jsonify({
+                        "success": True,
+                        "result_label": result_label,
+                        "full_output": output  # 전체 output 값도 반환
+                    })
+
                 else:
                     app.logger.error(f"Invalid output format: {output}")
                     return jsonify({"error": "Invalid output format"}), 500
@@ -98,24 +88,6 @@ def analyze():
     except Exception as e:
         app.logger.error(f'Unexpected error occurred: {e}')
         return jsonify({"error": f"Server error: {str(e)}"}), 500
-
-# 결과 페이지 처리
-@app.route('/top_analyze.html')
-def result_top():
-    image_url = request.args.get('image_url')
-    result_sentence = request.args.get('result_sentence')
-    return render_template('top_analyze.html', image_url=image_url, result_sentence=result_sentence)
-
-@app.route('/bottom_analyze.html')
-def result_bottom():
-    image_url = request.args.get('image_url')
-    result_sentence = request.args.get('result_sentence')
-    return render_template('bottom_analyze.html', image_url=image_url, result_sentence=result_sentence)
-
-if __name__ == '__main__':
-    if not os.path.exists(UPLOAD_FOLDER):
-        os.makedirs(UPLOAD_FOLDER)
-    app.run(debug=True)
 
 
 
