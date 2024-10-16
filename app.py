@@ -7,7 +7,10 @@ from flask_cors import CORS
 import pandas as pd
 
 app = Flask(__name__, static_folder='static')
-CORS(app)
+
+# CORS 설정: 필요한 경로에만 CORS를 허용
+CORS(app, resources={r"/analyze": {"origins": "*"}})
+
 UPLOAD_FOLDER = os.path.join(app.root_path, 'static', 'uploads')
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'webp'}
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
@@ -46,73 +49,27 @@ def query_fashion_clip(image_path, candidate_labels):
         app.logger.error(f"API 호출 중 오류 발생: {e}")
         return None
 
-def get_top_label(output):
-    if output and isinstance(output, list) and len(output) > 0:
-        top_item = max(output, key=lambda x: x['score'])
-        return top_item['label']
-    return None
+@app.route('/analyze', methods=['POST'])
+def analyze():
+    if 'file' not in request.files:
+        return jsonify({"error": "No file part"}), 400
+    file = request.files['file']
+    if file.filename == '':
+        return jsonify({"error": "No selected file"}), 400
+    if file and allowed_file(file.filename):
+        filename = secure_filename(file.filename)
+        file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+        file.save(file_path)
 
-# 엑셀에서 추천된 상의/하의/색상을 가져오는 함수
-def get_top_recommendations(clothing_item, df):
-    if clothing_item is None:
-        return ['추천 결과 없음'] * 3
+        # Example candidate labels for clothing
+        candidate_labels = ["shirt", "pants", "skirt", "jacket", "dress"]
+        output = query_fashion_clip(file_path, candidate_labels)
 
-    filtered_df = df[df['antecedents'].str.contains(clothing_item, case=False, na=False)]
-    
-    if filtered_df.empty:
-        return ['추천 결과 없음'] * 3
-
-    sorted_df = filtered_df.sort_values(by='lift', ascending=False)
-    top_3 = sorted_df['consequents'].head(3).tolist()
-
-    return top_3 + ['추천 결과 없음'] * (3 - len(top_3))
-
-# 이미지 URL을 만들기 위한 함수
-def get_image_url(image_name):
-    return url_for('uploaded_file', filename=image_name, _external=True)
-
-@app.route('/uploads/<filename>')
-def uploaded_file(filename):
-    return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
-
-# 기본 경로에 대한 라우트 추가
-@app.route('/')
-def index():
-    return render_template('index.html')
-
-@app.route('/result/top')
-def result_top():
-    combined_recommendation_1 = request.args.get('combined_recommendation_1')
-    combined_recommendation_2 = request.args.get('combined_recommendation_2')
-    combined_recommendation_3 = request.args.get('combined_recommendation_3')
-    recommended_image_1 = request.args.get('recommended_image_1')
-    recommended_image_2 = request.args.get('recommended_image_2')
-    recommended_image_3 = request.args.get('recommended_image_3')
-
-    return render_template('top_analyze.html', 
-                           combined_recommendation_1=combined_recommendation_1,
-                           combined_recommendation_2=combined_recommendation_2,
-                           combined_recommendation_3=combined_recommendation_3,
-                           recommended_image_1=recommended_image_1,
-                           recommended_image_2=recommended_image_2,
-                           recommended_image_3=recommended_image_3)
-
-@app.route('/result/bottom')
-def result_bottom():
-    combined_recommendation_1 = request.args.get('combined_recommendation_1')
-    combined_recommendation_2 = request.args.get('combined_recommendation_2')
-    combined_recommendation_3 = request.args.get('combined_recommendation_3')
-    recommended_image_1 = request.args.get('recommended_image_1')
-    recommended_image_2 = request.args.get('recommended_image_2')
-    recommended_image_3 = request.args.get('recommended_image_3')
-
-    return render_template('bottom_analyze.html', 
-                           combined_recommendation_1=combined_recommendation_1,
-                           combined_recommendation_2=combined_recommendation_2,
-                           combined_recommendation_3=combined_recommendation_3,
-                           recommended_image_1=recommended_image_1,
-                           recommended_image_2=recommended_image_2,
-                           recommended_image_3=recommended_image_3)
+        if output:
+            return jsonify(output)
+        else:
+            return jsonify({"error": "Failed to analyze image"}), 500
+    return jsonify({"error": "Invalid file type"}), 400
 
 if __name__ == '__main__':
     if not os.path.exists(UPLOAD_FOLDER):
