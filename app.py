@@ -66,11 +66,26 @@ def analyze():
             output = query_fashion_clip(file_path, candidate_labels)
 
             if output:
-                app.logger.info(f'Analysis result: {output}')  # output을 로그로 출력
+                app.logger.info(f'Analysis result: {output}')  # output을 로그로 출력하여 데이터 구조 확인
 
-                # 응답 형식을 확인하고 리턴해보기 (디버깅)
-                return jsonify({"output": output})  # 응답 구조 확인
-
+                # output이 비어 있지 않으면 처리
+                if isinstance(output, dict):
+                    app.logger.info(f'Output is a dictionary: {output}')
+                    if "labels" in output:
+                        labels = output["labels"]
+                        if "shirt" in labels:
+                            return jsonify({"success": True, "redirect_url": "/top_analyze.html"})
+                        elif "pants" in labels:
+                            return jsonify({"success": True, "redirect_url": "/bottom_analyze.html"})
+                        else:
+                            app.logger.error('No matching labels found in output.')
+                            return jsonify({"error": "No matching labels found"}), 400
+                    else:
+                        app.logger.error('No "labels" key in output.')
+                        return jsonify({"error": '"labels" key missing in output'}), 400
+                else:
+                    app.logger.error(f'Output is not a dictionary: {output}')
+                    return jsonify({"error": "Invalid output format"}), 500
             else:
                 app.logger.error('Failed to analyze image, no output from API.')
                 return jsonify({"error": "Failed to analyze image"}), 500
@@ -98,6 +113,7 @@ if __name__ == '__main__':
     if not os.path.exists(UPLOAD_FOLDER):
         os.makedirs(UPLOAD_FOLDER)
     app.run(debug=True)
+
 
 
 
