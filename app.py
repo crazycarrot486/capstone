@@ -76,15 +76,21 @@ def analyze():
             output = query_fashion_clip(file_path, candidate_labels)
 
             if output:
-                app.logger.info(f'Analysis result: {output}')
+                app.logger.info(f'Analysis result: {output}')  # output을 로그로 출력하여 데이터 구조 확인
 
-                # 분석 결과에 따라 상의 또는 하의 페이지로 리디렉션
-                if "shirt" in output["labels"]:  # 상의 분석 결과일 경우
-                    return jsonify({"success": True, "redirect_url": "/top_analyze.html"})
-                elif "pants" in output["labels"]:  # 하의 분석 결과일 경우
-                    return jsonify({"success": True, "redirect_url": "/bottom_analyze.html"})
+                # output의 형식에 따라 처리
+                if isinstance(output, dict) and "labels" in output:
+                    labels = output["labels"]
+                    # 분석 결과에 따라 상의 또는 하의 페이지로 리디렉션
+                    if "shirt" in labels:  # 상의 분석 결과일 경우
+                        return jsonify({"success": True, "redirect_url": "/top_analyze.html"})
+                    elif "pants" in labels:  # 하의 분석 결과일 경우
+                        return jsonify({"success": True, "redirect_url": "/bottom_analyze.html"})
+                    else:
+                        return jsonify({"error": "Analysis result not recognized"}), 400
                 else:
-                    return jsonify({"error": "Analysis result not recognized"}), 400
+                    app.logger.error(f'Invalid output format: {output}')
+                    return jsonify({"error": "Invalid output format"}), 500
             else:
                 app.logger.error('Failed to analyze image, no output from API.')
                 return jsonify({"error": "Failed to analyze image"}), 500
@@ -114,5 +120,6 @@ if __name__ == '__main__':
     if not os.path.exists(UPLOAD_FOLDER):
         os.makedirs(UPLOAD_FOLDER)
     app.run(debug=True)
+
 
 
