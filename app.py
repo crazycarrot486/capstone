@@ -57,26 +57,35 @@ def analyze():
     if request.method == 'OPTIONS':
         return jsonify({"status": "OK"}), 200
 
-    if 'file' not in request.files:
-        return jsonify({"error": "No file part"}), 400
-    file = request.files['file']
-    if file.filename == '':
-        return jsonify({"error": "No selected file"}), 400
-    if file and allowed_file(file.filename):
-        filename = secure_filename(file.filename)
-        file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-        file.save(file_path)
+    try:
+        if 'file' not in request.files:
+            app.logger.error('File part missing in the request')
+            return jsonify({"error": "No file part"}), 400
+        file = request.files['file']
+        if file.filename == '':
+            app.logger.error('No selected file')
+            return jsonify({"error": "No selected file"}), 400
+        if file and allowed_file(file.filename):
+            filename = secure_filename(file.filename)
+            file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+            file.save(file_path)
 
-        # Example candidate labels for clothing
-        candidate_labels = ["shirt", "pants", "skirt", "jacket", "dress"]
-        output = query_fashion_clip(file_path, candidate_labels)
+            # Example candidate labels for clothing
+            candidate_labels = ["shirt", "pants", "skirt", "jacket", "dress"]
+            output = query_fashion_clip(file_path, candidate_labels)
 
-        if output:
-            return jsonify(output)
+            if output:
+                app.logger.info(f'Analysis result: {output}')  # 분석 결과 로그 출력
+                return jsonify({"success": True, "redirect_url": "/result/top"})
+            else:
+                app.logger.error('Failed to analyze image, no output from API.')
+                return jsonify({"error": "Failed to analyze image"}), 500
         else:
-            app.logger.error("Failed to analyze image, no output from API.")
-            return jsonify({"error": "Failed to analyze image"}), 500
-    return jsonify({"error": "Invalid file type"}), 400
+            app.logger.error('Invalid file type')
+            return jsonify({"error": "Invalid file type"}), 400
+    except Exception as e:
+        app.logger.error(f'Unexpected error occurred: {e}')
+        return jsonify({"error": f"Server error: {str(e)}"}), 500
 
 # 결과 페이지 처리 예시
 @app.route('/result/top')
@@ -117,4 +126,5 @@ if __name__ == '__main__':
     if not os.path.exists(UPLOAD_FOLDER):
         os.makedirs(UPLOAD_FOLDER)
     app.run(debug=True)
+
 
