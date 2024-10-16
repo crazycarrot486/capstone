@@ -1,7 +1,7 @@
 import os
 import base64
 import requests
-from flask import Flask, request, jsonify, render_template, url_for
+from flask import Flask, request, jsonify, render_template
 from werkzeug.utils import secure_filename
 from flask_cors import CORS
 import pandas as pd
@@ -19,6 +19,16 @@ app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 API_URL = "https://api-inference.huggingface.co/models/patrickjohncyh/fashion-clip"
 headers = {"Authorization": "Bearer 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"}
 
+# 엑셀 파일 경로 (상의, 하의, 색상 추천 데이터를 위한 경로)
+clothing_recommendation_file = os.path.join(app.root_path, 'deploy', 'clothes.xlsx')
+color_recommendation_file = os.path.join(app.root_path, 'deploy', 'color.xlsx')
+image_recommendation_file = os.path.join(app.root_path, 'deploy', 'image.xlsx')
+
+# 엑셀 파일 불러오기
+clothing_recommendation_df = pd.read_excel(clothing_recommendation_file, sheet_name='Sheet1')
+color_recommendation_df = pd.read_excel(color_recommendation_file, sheet_name='Sheet1')
+image_df = pd.read_excel(image_recommendation_file, sheet_name='Final')
+
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
@@ -34,10 +44,14 @@ def query_fashion_clip(image_path, candidate_labels):
         if response.status_code != 200:
             app.logger.error(f"API 요청 실패: {response.status_code}")
             return None
-        return response.json()  # API 응답 데이터 반환
+        return response.json()
     except Exception as e:
         app.logger.error(f"API 호출 중 오류 발생: {e}")
         return None
+
+@app.route('/')
+def home():
+    return "API Server is running"
 
 @app.route('/analyze', methods=['POST', 'OPTIONS'])
 def analyze():
@@ -63,22 +77,8 @@ def analyze():
 
             if output:
                 app.logger.info(f'Analysis result: {output}')
-                
-                # Output이 리스트 형식인지 확인하고, 그 값도 확인
-                if isinstance(output, list) and len(output) > 0:
-                    result_label = output[0]  # 리스트의 첫 번째 값을 사용
-                    app.logger.info(f'Result label: {result_label}')  # result_label 로그로 출력
-
-                    # result_label을 그대로 반환하여 분석 결과 확인
-                    return jsonify({
-                        "success": True,
-                        "result_label": result_label,
-                        "full_output": output  # 전체 output 값도 반환
-                    })
-
-                else:
-                    app.logger.error(f"Invalid output format: {output}")
-                    return jsonify({"error": "Invalid output format"}), 500
+                # 분석 결과에 따라 적절한 경로로 리디렉션
+                return jsonify({"success": True, "redirect_url": "/top_analyze.html"})
             else:
                 app.logger.error('Failed to analyze image, no output from API.')
                 return jsonify({"error": "Failed to analyze image"}), 500
@@ -88,6 +88,22 @@ def analyze():
     except Exception as e:
         app.logger.error(f'Unexpected error occurred: {e}')
         return jsonify({"error": f"Server error: {str(e)}"}), 500
+
+# 결과 페이지 처리
+@app.route('/top_analyze.html')
+def result_top():
+    return render_template('top_analyze.html')
+
+@app.route('/bottom_analyze.html')
+def result_bottom():
+    return render_template('bottom_analyze.html')
+
+if __name__ == '__main__':
+    if not os.path.exists(UPLOAD_FOLDER):
+        os.makedirs(UPLOAD_FOLDER)
+    app.run(debug=True)
+
+
 
 
 
