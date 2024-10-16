@@ -68,22 +68,36 @@ def analyze():
             if output:
                 app.logger.info(f'Analysis result: {output}')
 
-                # 여기에 분석된 이미지 및 결과 텍스트를 백엔드에서 프론트엔드로 전달
-                image_url = url_for('static', filename=f'uploads/{filename}')
-                result_sentence = f"이 옷은 {output['labels'][0]}입니다."
+                # output['labels']가 리스트인지 확인
+                if "labels" in output and isinstance(output["labels"], list):
+                    labels = output["labels"]
 
-                if "shirt" in output["labels"]:  # 상의 분석 결과일 경우
-                    return jsonify({
-                        "success": True, 
-                        "redirect_url": url_for('result_top', image_url=image_url, result_sentence=result_sentence)
-                    })
-                elif "pants" in output["labels"]:  # 하의 분석 결과일 경우
-                    return jsonify({
-                        "success": True, 
-                        "redirect_url": url_for('result_bottom', image_url=image_url, result_sentence=result_sentence)
-                    })
+                    # 첫 번째 label을 사용
+                    if len(labels) > 0:
+                        result_label = labels[0]  # 리스트의 첫 번째 값 가져오기
+                        image_url = url_for('static', filename=f'uploads/{filename}')
+                        result_sentence = f"이 옷은 {result_label}입니다."
+
+                        # 결과에 따라 리디렉션
+                        if result_label == "shirt":
+                            return jsonify({
+                                "success": True, 
+                                "redirect_url": url_for('result_top', image_url=image_url, result_sentence=result_sentence)
+                            })
+                        elif result_label == "pants":
+                            return jsonify({
+                                "success": True, 
+                                "redirect_url": url_for('result_bottom', image_url=image_url, result_sentence=result_sentence)
+                            })
+                        else:
+                            app.logger.error('알 수 없는 결과입니다.')
+                            return jsonify({"error": "Unknown analysis result"}), 400
+                    else:
+                        app.logger.error('분석 결과가 비어 있습니다.')
+                        return jsonify({"error": "No analysis result"}), 400
                 else:
-                    return jsonify({"error": "Analysis result not recognized"}), 400
+                    app.logger.error(f"Invalid output format: {output}")
+                    return jsonify({"error": "Invalid output format"}), 500
             else:
                 app.logger.error('Failed to analyze image, no output from API.')
                 return jsonify({"error": "Failed to analyze image"}), 500
