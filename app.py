@@ -7,9 +7,7 @@ from flask_cors import CORS
 import pandas as pd
 
 app = Flask(__name__, static_folder='static')
-
-# CORS 설정: 모든 경로와 모든 메서드에 대해 허용
-CORS(app, resources={r"/*": {"origins": "*"}})
+CORS(app)
 
 UPLOAD_FOLDER = os.path.join(app.root_path, 'static', 'uploads')
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'webp'}
@@ -49,10 +47,14 @@ def query_fashion_clip(image_path, candidate_labels):
         app.logger.error(f"API 호출 중 오류 발생: {e}")
         return None
 
+# 루트 경로 처리
+@app.route('/')
+def home():
+    return "API Server is running"
+
 @app.route('/analyze', methods=['POST', 'OPTIONS'])
 def analyze():
     if request.method == 'OPTIONS':
-        # Preflight request에 대한 처리
         return jsonify({"status": "OK"}), 200
 
     if 'file' not in request.files:
@@ -72,10 +74,47 @@ def analyze():
         if output:
             return jsonify(output)
         else:
+            app.logger.error("Failed to analyze image, no output from API.")
             return jsonify({"error": "Failed to analyze image"}), 500
     return jsonify({"error": "Invalid file type"}), 400
+
+# 결과 페이지 처리 예시
+@app.route('/result/top')
+def result_top():
+    combined_recommendation_1 = request.args.get('combined_recommendation_1')
+    combined_recommendation_2 = request.args.get('combined_recommendation_2')
+    combined_recommendation_3 = request.args.get('combined_recommendation_3')
+    recommended_image_1 = request.args.get('recommended_image_1')
+    recommended_image_2 = request.args.get('recommended_image_2')
+    recommended_image_3 = request.args.get('recommended_image_3')
+
+    return render_template('top_analyze.html', 
+                           combined_recommendation_1=combined_recommendation_1,
+                           combined_recommendation_2=combined_recommendation_2,
+                           combined_recommendation_3=combined_recommendation_3,
+                           recommended_image_1=recommended_image_1,
+                           recommended_image_2=recommended_image_2,
+                           recommended_image_3=recommended_image_3)
+
+@app.route('/result/bottom')
+def result_bottom():
+    combined_recommendation_1 = request.args.get('combined_recommendation_1')
+    combined_recommendation_2 = request.args.get('combined_recommendation_2')
+    combined_recommendation_3 = request.args.get('combined_recommendation_3')
+    recommended_image_1 = request.args.get('recommended_image_1')
+    recommended_image_2 = request.args.get('recommended_image_2')
+    recommended_image_3 = request.args.get('recommended_image_3')
+
+    return render_template('bottom_analyze.html', 
+                           combined_recommendation_1=combined_recommendation_1,
+                           combined_recommendation_2=combined_recommendation_2,
+                           combined_recommendation_3=combined_recommendation_3,
+                           recommended_image_1=recommended_image_1,
+                           recommended_image_2=recommended_image_2,
+                           recommended_image_3=recommended_image_3)
 
 if __name__ == '__main__':
     if not os.path.exists(UPLOAD_FOLDER):
         os.makedirs(UPLOAD_FOLDER)
     app.run(debug=True)
+
