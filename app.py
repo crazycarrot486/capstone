@@ -94,16 +94,7 @@ def result_bottom():
     result_sentence = request.args.get('result_sentence')
     return render_template('bottom_analyze.html', image_url=image_url, result_sentence=result_sentence)
 
-@app.route('/bottom_analyze')
-def result_bottom():
-    # GET 파라미터로 받은 image_url과 result_sentence를 확인
-    image_url = request.args.get('image_url')
-    result_sentence = request.args.get('result_sentence')
 
-    # 로그에 출력하여 image_url과 result_sentence가 제대로 넘어오는지 확인
-    app.logger.info(f"image_url: {image_url}, result_sentence: {result_sentence}")
-    
-    return render_template('bottom_analyze.html', image_url=image_url, result_sentence=result_sentence)
 
 
 if __name__ == '__main__':
