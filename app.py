@@ -7,7 +7,7 @@ from flask_cors import CORS
 import pandas as pd
 
 app = Flask(__name__, static_folder='static')
-CORS(app, resources={r"/*": {"origins": "https://fillout-closet.netlify.app"}})  # Netlify URL을 허용
+CORS(app, resources={r"/*": {"origins": "https://fillout-closet.netlify.app"}})  # Netlify URL 허용
 UPLOAD_FOLDER = os.path.join(app.root_path, 'static', 'uploads')
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'webp'}
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
@@ -118,7 +118,7 @@ def find_matching_images_for_combinations(combinations, df, clothing_type, analy
 def index():
     return render_template('index.html')
 
-@app.route('/analyze', methods=['POST'])
+@app.route('/', methods=['POST'])  # 루트 경로로 분석 요청 처리
 def analyze():
     try:
         if 'file' not in request.files or 'clothing-type' not in request.form:
@@ -255,4 +255,3 @@ if __name__ == '__main__':
     if not os.path.exists(UPLOAD_FOLDER):
         os.makedirs(UPLOAD_FOLDER)
     app.run(debug=True)
-
