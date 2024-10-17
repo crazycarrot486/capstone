@@ -8,7 +8,7 @@ import pandas as pd
 
 app = Flask(__name__, static_folder='static')
 
-# CORS 설정: 모든 경로와 모든 출처에 대해 허용
+# CORS 설정
 CORS(app, resources={r"/*": {"origins": "*"}})
 
 UPLOAD_FOLDER = os.path.join(app.root_path, 'static', 'uploads')
@@ -18,16 +18,6 @@ app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 # Hugging Face API 정보
 API_URL = "https://api-inference.huggingface.co/models/patrickjohncyh/fashion-clip"
 headers = {"Authorization": "Bearer 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"}
-
-# 엑셀 파일 경로 (상의, 하의, 색상 추천 데이터를 위한 경로)
-clothing_recommendation_file = os.path.join(app.root_path, 'deploy', 'clothes.xlsx')
-color_recommendation_file = os.path.join(app.root_path, 'deploy', 'color.xlsx')
-image_recommendation_file = os.path.join(app.root_path, 'deploy', 'image.xlsx')
-
-# 엑셀 파일 불러오기
-clothing_recommendation_df = pd.read_excel(clothing_recommendation_file, sheet_name='Sheet1')
-color_recommendation_df = pd.read_excel(color_recommendation_file, sheet_name='Sheet1')
-image_df = pd.read_excel(image_recommendation_file, sheet_name='Final')
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
@@ -60,38 +50,40 @@ def analyze():
 
     try:
         if 'file' not in request.files:
-            app.logger.error('File part missing in the request')
             return jsonify({"error": "No file part"}), 400
         file = request.files['file']
         if file.filename == '':
-            app.logger.error('No selected file')
             return jsonify({"error": "No selected file"}), 400
         if file and allowed_file(file.filename):
             filename = secure_filename(file.filename)
             file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
             file.save(file_path)
 
-            # Example candidate labels for clothing
+            # 분석할 candidate labels 설정
             candidate_labels = ["shirt", "pants", "skirt", "jacket", "dress"]
+
+            # Fashion-CLIP 호출
             output = query_fashion_clip(file_path, candidate_labels)
 
             if output:
-                # 옷의 종류에 따라 상의/하의 결과 페이지로 리디렉션
-                clothing_type = output[0]['label']  # 분석 결과에서 첫 번째 라벨 사용
+                # 가장 높은 점수를 가진 label 찾기
+                highest_score_label = max(output['labels'], key=lambda x: x['score'])
+                label = highest_score_label['label']
+                app.logger.info(f'Predicted label: {label}')
+
                 image_url = f'/static/uploads/{filename}'
 
-                if clothing_type == "shirt":
-                    return jsonify({"success": True, "redirect_url": "/top_analyze.html", "image_url": image_url, "result_sentence": clothing_type})
+                # 상의와 하의에 따라 적절한 결과 페이지로 리디렉션
+                if label in ["shirt", "jacket"]:
+                    return jsonify({"success": True, "redirect_url": "/top_analyze.html", "image_url": image_url, "result_sentence": label})
                 else:
-                    return jsonify({"success": True, "redirect_url": "/bottom_analyze.html", "image_url": image_url, "result_sentence": clothing_type})
+                    return jsonify({"success": True, "redirect_url": "/bottom_analyze.html", "image_url": image_url, "result_sentence": label})
             else:
-                app.logger.error('Failed to analyze image, no output from API.')
                 return jsonify({"error": "Failed to analyze image"}), 500
         else:
-            app.logger.error('Invalid file type')
             return jsonify({"error": "Invalid file type"}), 400
     except Exception as e:
-        app.logger.error(f'Unexpected error occurred: {e}')
+        app.logger.error(f"Unexpected error occurred: {e}")
         return jsonify({"error": f"Server error: {str(e)}"}), 500
 
 # 결과 페이지 처리
@@ -111,6 +103,7 @@ if __name__ == '__main__':
     if not os.path.exists(UPLOAD_FOLDER):
         os.makedirs(UPLOAD_FOLDER)
     app.run(debug=True)
+
 
 
 
