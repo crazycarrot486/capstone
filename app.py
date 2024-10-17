@@ -7,7 +7,7 @@ from flask_cors import CORS
 import pandas as pd
 
 app = Flask(__name__, static_folder='static')
-CORS(app)
+CORS(app, resources={r"/*": {"origins": "https://your-netlify-app.netlify.app"}})  # Netlify URL을 허용
 UPLOAD_FOLDER = os.path.join(app.root_path, 'static', 'uploads')
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'webp'}
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
@@ -94,7 +94,6 @@ def find_matching_images_for_combinations(combinations, df, clothing_type, analy
     for combo in combinations:
         clothing_type, color = combo
         
-        # 추천된 조합뿐만 아니라 분석된 의류 종류와 색상도 함께 매칭
         matched_row = df[
             (df[category_column] == analyzed_clothing) & 
             (df[color_column] == analyzed_color) & 
@@ -114,6 +113,10 @@ def find_matching_images_for_combinations(combinations, df, clothing_type, analy
         matched_images.append('/static/default_image.jpg')
     
     return matched_images
+
+@app.route('/')
+def index():
+    return render_template('index.html')
 
 @app.route('/analyze', methods=['POST'])
 def analyze():
@@ -194,7 +197,7 @@ def analyze():
                     'success': True,
                     'label': clothing_label,
                     'color': color_label,
-                                        'combined_recommendation_1': combinations[0],
+                    'combined_recommendation_1': combinations[0],
                     'combined_recommendation_2': combinations[1],
                     'combined_recommendation_3': combinations[2],
                     'image_url': image_url,
