@@ -34,7 +34,7 @@ def query_fashion_clip(image_path, candidate_labels):
         if response.status_code != 200:
             app.logger.error(f"API 요청 실패: {response.status_code}")
             return None
-        return response.json()  # 이 부분에서 JSON 응답을 반환
+        return response.json()  # JSON 응답 반환
     except Exception as e:
         app.logger.error(f"API 호출 중 오류 발생: {e}")
         return None
@@ -67,7 +67,7 @@ def analyze():
 
             if output:
                 # 가장 높은 점수를 가진 clothing label 찾기
-                highest_clothing_label = max(output, key=lambda x: x['score'])['label']  # 리스트에서 점수가 가장 높은 값을 가져옴
+                highest_clothing_label = max(output, key=lambda x: x['score'])['label']
 
                 image_url = f'/static/uploads/{filename}'
 
