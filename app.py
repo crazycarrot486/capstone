@@ -33,7 +33,7 @@ def query_fashion_clip(image_path, candidate_labels):
         if response.status_code != 200:
             app.logger.error(f"API 요청 실패: {response.status_code}")
             return None
-        return response.json()  # JSON 응답 반환
+        return response.json()
     except Exception as e:
         app.logger.error(f"API 호출 중 오류 발생: {e}")
         return None
@@ -98,6 +98,7 @@ if __name__ == '__main__':
     if not os.path.exists(UPLOAD_FOLDER):
         os.makedirs(UPLOAD_FOLDER)
     app.run(debug=True)
+
 
 
 
