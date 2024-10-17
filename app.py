@@ -51,7 +51,7 @@ def query_fashion_clip(image_path, candidate_labels):
 
 @app.route('/')
 def home():
-    return "API Server is running"
+    return render_template('index.html')
 
 @app.route('/analyze', methods=['POST', 'OPTIONS'])
 def analyze():
@@ -76,9 +76,14 @@ def analyze():
             output = query_fashion_clip(file_path, candidate_labels)
 
             if output:
-                app.logger.info(f'Analysis result: {output}')
-                # 분석 결과에 따라 적절한 경로로 리디렉션
-                return jsonify({"success": True, "redirect_url": "/top_analyze.html"})
+                # 옷의 종류에 따라 상의/하의 결과 페이지로 리디렉션
+                clothing_type = output[0]['label']  # 분석 결과에서 첫 번째 라벨 사용
+                image_url = f'/static/uploads/{filename}'
+
+                if clothing_type == "shirt":
+                    return jsonify({"success": True, "redirect_url": "/top_analyze.html", "image_url": image_url, "result_sentence": clothing_type})
+                else:
+                    return jsonify({"success": True, "redirect_url": "/bottom_analyze.html", "image_url": image_url, "result_sentence": clothing_type})
             else:
                 app.logger.error('Failed to analyze image, no output from API.')
                 return jsonify({"error": "Failed to analyze image"}), 500
@@ -92,16 +97,21 @@ def analyze():
 # 결과 페이지 처리
 @app.route('/top_analyze.html')
 def result_top():
-    return render_template('top_analyze.html')
+    image_url = request.args.get('image_url')
+    result_sentence = request.args.get('result_sentence')
+    return render_template('top_analyze.html', image_url=image_url, result_sentence=result_sentence)
 
 @app.route('/bottom_analyze.html')
 def result_bottom():
-    return render_template('bottom_analyze.html')
+    image_url = request.args.get('image_url')
+    result_sentence = request.args.get('result_sentence')
+    return render_template('bottom_analyze.html', image_url=image_url, result_sentence=result_sentence)
 
 if __name__ == '__main__':
     if not os.path.exists(UPLOAD_FOLDER):
         os.makedirs(UPLOAD_FOLDER)
     app.run(debug=True)
+
 
 
 
