@@ -69,9 +69,11 @@ def analyze():
 
                 # 상의와 하의에 따라 적절한 결과 페이지로 리디렉션
                 if highest_clothing_label in ["shirt", "jacket"]:
-                    return redirect(url_for('result_top', image_url=image_url, result_sentence=highest_clothing_label))
+                    return jsonify({"success": True, "redirect_url": "/top_analyze", 
+                                    "image_url": image_url, "result_sentence": highest_clothing_label})
                 else:
-                    return redirect(url_for('result_bottom', image_url=image_url, result_sentence=highest_clothing_label))
+                    return jsonify({"success": True, "redirect_url": "/bottom_analyze", 
+                                    "image_url": image_url, "result_sentence": highest_clothing_label})
             else:
                 return jsonify({"error": "Failed to analyze image"}), 500
         else:
