@@ -1,10 +1,9 @@
 import os
 import base64
 import requests
-from flask import Flask, request, jsonify, render_template
+from flask import Flask, request, jsonify, render_template, redirect, url_for
 from werkzeug.utils import secure_filename
 from flask_cors import CORS
-import pandas as pd
 
 app = Flask(__name__, static_folder='static')
 
@@ -43,11 +42,8 @@ def query_fashion_clip(image_path, candidate_labels):
 def home():
     return render_template('index.html')
 
-@app.route('/analyze', methods=['POST', 'OPTIONS'])
+@app.route('/analyze', methods=['POST'])
 def analyze():
-    if request.method == 'OPTIONS':
-        return jsonify({"status": "OK"}), 200
-
     try:
         if 'file' not in request.files:
             return jsonify({"error": "No file part"}), 400
@@ -73,11 +69,9 @@ def analyze():
 
                 # 상의와 하의에 따라 적절한 결과 페이지로 리디렉션
                 if highest_clothing_label in ["shirt", "jacket"]:
-                    return jsonify({"success": True, "redirect_url": "/top_analyze.html", 
-                                    "image_url": image_url, "result_sentence": highest_clothing_label})
+                    return redirect(url_for('result_top', image_url=image_url, result_sentence=highest_clothing_label))
                 else:
-                    return jsonify({"success": True, "redirect_url": "/bottom_analyze.html", 
-                                    "image_url": image_url, "result_sentence": highest_clothing_label})
+                    return redirect(url_for('result_bottom', image_url=image_url, result_sentence=highest_clothing_label))
             else:
                 return jsonify({"error": "Failed to analyze image"}), 500
         else:
@@ -86,14 +80,13 @@ def analyze():
         app.logger.error(f"Unexpected error occurred: {e}")
         return jsonify({"error": f"Server error: {str(e)}"}), 500
 
-# 결과 페이지 처리
-@app.route('/top_analyze.html')
+@app.route('/top_analyze')
 def result_top():
     image_url = request.args.get('image_url')
     result_sentence = request.args.get('result_sentence')
     return render_template('top_analyze.html', image_url=image_url, result_sentence=result_sentence)
 
-@app.route('/bottom_analyze.html')
+@app.route('/bottom_analyze')
 def result_bottom():
     image_url = request.args.get('image_url')
     result_sentence = request.args.get('result_sentence')
