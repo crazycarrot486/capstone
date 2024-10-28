@@ -7,7 +7,7 @@ from flask_cors import CORS
 import pandas as pd
 
 app = Flask(__name__, static_folder='static')
-CORS(app, resources={r"/*": {"origins": ["https://fillout-closet.netlify.app"]}}) # Netlify URL을 허용
+CORS(app, resources={r"/*": {"origins": "*"}})
 UPLOAD_FOLDER = os.path.join(app.root_path, 'static', 'uploads')
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'webp'}
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
