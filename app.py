@@ -29,6 +29,39 @@ image_df = pd.read_excel(image_recommendation_file, sheet_name='Final')
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
+def translate_to_korean(label):
+    translation_dict = {
+        "shirt": "셔츠",
+        "T-shirt": "티셔츠",
+        "polo": "폴로 셔츠",
+        "suit jacket": "정장 재킷",
+        "knitwear": "니트웨어",
+        "jacket": "재킷",
+        "coat": "코트",
+        "hoodie": "후드티",
+        "sweat shirt": "스웨트 셔츠",
+        "cotton pants": "면바지",
+        "sweat pants": "운동 바지",
+        "denim pants": "청바지",
+        "cargo pants": "카고 바지",
+        "shorts": "반바지",
+        "dress pants": "정장 바지"
+    }
+    return translation_dict.get(label, label)
+
+def translate_color_to_korean(color_label):
+    color_translation_dict = {
+        "blue clothes": "파란색",
+        "black clothes": "검은색",
+        "red clothes": "빨간색",
+        "white clothes": "흰색",
+        "grey clothes": "회색",
+        "beige clothes": "베이지색",
+        "green clothes": "초록색",
+        "navy clothes": "남색"
+    }
+    return color_translation_dict.get(color_label, color_label)
+
 def query_fashion_clip(image_path, candidate_labels):
     try:
         with open(image_path, "rb") as f:
@@ -189,6 +222,8 @@ def analyze():
                                             recommended_image_1=recommended_images[0],
                                             recommended_image_2=recommended_images[1],
                                             recommended_image_3=recommended_images[2],
+                                            label_korean=clothing_label_korean,
+                                            color_korean=color_label_korean,
                                             _external=True)
                 })
 
@@ -211,6 +246,8 @@ def analyze():
                                             recommended_image_1=recommended_images[0],
                                             recommended_image_2=recommended_images[1],
                                             recommended_image_3=recommended_images[2],
+                                            label_korean=clothing_label_korean,
+                                            color_korean=color_label_korean,
                                             _external=True)
                 })
     except Exception as e:
