@@ -7,7 +7,7 @@ from flask_cors import CORS
 import pandas as pd
 
 app = Flask(__name__, static_folder='static')
-CORS(app, resources={r"/*": {"origins": "https://fillout-closet.netlify.app"}})  # Netlify URL 허용
+CORS(app)
 UPLOAD_FOLDER = os.path.join(app.root_path, 'static', 'uploads')
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'webp'}
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
@@ -26,26 +26,24 @@ clothing_recommendation_df = pd.read_excel(clothing_recommendation_file, sheet_n
 color_recommendation_df = pd.read_excel(color_recommendation_file, sheet_name='Sheet1')
 image_df = pd.read_excel(image_recommendation_file, sheet_name='Final')
 
-def allowed_file(filename):
-    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
-
+# 옷과 색상 번역 함수 추가
 def translate_to_korean(label):
     translation_dict = {
         "shirt": "셔츠",
         "T-shirt": "티셔츠",
-        "polo": "폴로 셔츠",
-        "suit jacket": "정장 재킷",
-        "knitwear": "니트웨어",
+        "polo": "폴로티",
+        "suit jacket": "블레이저",
+        "knitwear": "니트",
         "jacket": "재킷",
         "coat": "코트",
-        "hoodie": "후드티",
-        "sweat shirt": "스웨트 셔츠",
+        "hoodie": "후드",
+        "sweat shirt": "맨투맨",
         "cotton pants": "면바지",
-        "sweat pants": "운동 바지",
+        "sweat pants": "스웻 팬츠",
         "denim pants": "청바지",
-        "cargo pants": "카고 바지",
-        "shorts": "반바지",
-        "dress pants": "정장 바지"
+        "cargo pants": "카고 팬츠",
+        "shorts": "쇼츠",
+        "dress pants": "슬랙스"
     }
     return translation_dict.get(label, label)
 
@@ -55,12 +53,15 @@ def translate_color_to_korean(color_label):
         "black clothes": "검은색",
         "red clothes": "빨간색",
         "white clothes": "흰색",
-        "grey clothes": "회색",
+        "grey clothes": "그레이색",
         "beige clothes": "베이지색",
         "green clothes": "초록색",
         "navy clothes": "남색"
     }
     return color_translation_dict.get(color_label, color_label)
+
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 def query_fashion_clip(image_path, candidate_labels):
     try:
@@ -127,6 +128,7 @@ def find_matching_images_for_combinations(combinations, df, clothing_type, analy
     for combo in combinations:
         clothing_type, color = combo
         
+        # 추천된 조합뿐만 아니라 분석된 의류 종류와 색상도 함께 매칭
         matched_row = df[
             (df[category_column] == analyzed_clothing) & 
             (df[color_column] == analyzed_color) & 
@@ -147,37 +149,34 @@ def find_matching_images_for_combinations(combinations, df, clothing_type, analy
     
     return matched_images
 
-@app.route('/')
-def index():
-    return render_template('index.html')
-
-@app.route('/', methods=['POST'])  # 루트 경로로 분석 요청 처리
+@app.route('/analyze', methods=['POST'])
 def analyze():
     try:
+        # 파일과 의류 종류가 전송되었는지 확인
         if 'file' not in request.files or 'clothing-type' not in request.form:
             return jsonify({'success': False, 'error': '파일 또는 의류 종류가 선택되지 않았습니다.'}), 400
 
         file = request.files['file']
         clothing_type = request.form['clothing-type']
 
+        # 파일 유효성 검사
         if file and allowed_file(file.filename):
             filename = secure_filename(file.filename)
             filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
             file.save(filepath)
 
-            # 의류 종류 분석 (shirt와 T-shirt 구분)
-            if clothing_type == "상의":
-                candidate_labels = ["shirt", "T-shirt", "polo", "suit jacket", "knitwear", "jacket", "coat", "hoodie", "sweat shirt"]
-            else:
-                candidate_labels = ["cotton pants", "sweat pants", "denim pants", "cargo pants", "shorts", "dress pants"]
+            # 의류 종류에 따른 분석 후보 설정
+            candidate_labels = ["shirt", "T-shirt", "polo", "suit jacket", "knitwear", "jacket", "coat", "hoodie", "sweat shirt"] if clothing_type == "상의" else ["cotton pants", "sweat pants", "denim pants", "cargo pants", "shorts", "dress pants"]
 
+            # 의류 종류 분석
             output = query_fashion_clip(filepath, candidate_labels)
             if output is None:
                 return jsonify({'success': False, 'error': 'API 요청에 실패했습니다.'})
 
-            # 라벨 저장
+            # 분석된 의류 종류 저장 및 한국어 변환
             clothing_label = get_top_label(output)
-            app.logger.info(f"분석된 의류 종류: {clothing_label}")
+            clothing_label_korean = translate_to_korean(clothing_label)
+            app.logger.info(f"분석된 의류 종류: {clothing_label} -> {clothing_label_korean}")
 
             # 색상 분석
             color_labels = ["blue clothes", "black clothes", "red clothes", "white clothes", "grey clothes", "beige clothes", "green clothes", "navy clothes"]
@@ -185,74 +184,60 @@ def analyze():
             if color_output is None:
                 return jsonify({'success': False, 'error': '색상 분석 요청에 실패했습니다.'})
 
-            # 색상 저장
+            # 분석된 색상 저장 및 한국어 변환
             color_label = get_top_label(color_output)
-            app.logger.info(f"분석된 색상: {color_label}")
+            color_label_korean = translate_color_to_korean(color_label)
+            app.logger.info(f"분석된 색상: {color_label} -> {color_label_korean}")
 
-            # 의류 및 색상 추천 결과 가져오기
+            # 의류 및 색상 추천 데이터 생성
             clothing_recommendations = get_top_recommendations(clothing_label, clothing_recommendation_df)
             color_recommendations = get_top_recommendations(color_label, color_recommendation_df)
 
-            # 9가지 조합 생성
+            # 추천 조합 생성 (9가지)
             combinations = [(clothing_recommendations[i], color_recommendations[j]) for i in range(3) for j in range(3)]
             app.logger.info(f"생성된 조합: {combinations}")
 
-            # 9개 조합 중 상단 3개의 이미지 찾기 (분석된 의류 종류와 색상도 함께 고려)
+            # 추천 이미지 찾기 (분석된 의류 종류와 색상도 함께 고려)
             recommended_images = find_matching_images_for_combinations(combinations, image_df, clothing_type, clothing_label, color_label)
+            app.logger.info(f"추천된 이미지 URL: {recommended_images}")
 
-            # URL에 라벨 전달
-            image_url = f"/uploads/{filename}"
+            # 분석 결과에 대한 JSON 응답 생성
+            response_data = {
+                'success': True,
+                'label': clothing_label,
+                'label_korean': clothing_label_korean,
+                'color': color_label,
+                'color_korean': color_label_korean,
+                'combined_recommendation_1': combinations[0],
+                'combined_recommendation_2': combinations[1],
+                'combined_recommendation_3': combinations[2],
+                'image_url': f"/uploads/{filename}",
+                'recommended_image_1': recommended_images[0],
+                'recommended_image_2': recommended_images[1],
+                'recommended_image_3': recommended_images[2],
+            }
 
-            if clothing_type == '상의':
-                return jsonify({
-                    'success': True,
-                    'label': clothing_label,
-                    'color': color_label,
-                    'combined_recommendation_1': combinations[0],
-                    'combined_recommendation_2': combinations[1],
-                    'combined_recommendation_3': combinations[2],
-                    'image_url': image_url,
-                    'recommended_image_1': recommended_images[0],
-                    'recommended_image_2': recommended_images[1],
-                    'recommended_image_3': recommended_images[2],
-                    'redirect_url': url_for('result_top', 
-                                            combined_recommendation_1=combinations[0],
-                                            combined_recommendation_2=combinations[1],
-                                            combined_recommendation_3=combinations[2],
-                                            recommended_image_1=recommended_images[0],
-                                            recommended_image_2=recommended_images[1],
-                                            recommended_image_3=recommended_images[2],
-                                            label_korean=clothing_label_korean,
-                                            color_korean=color_label_korean,
-                                            _external=True)
-                })
+            # 리다이렉트 URL 설정
+            redirect_endpoint = 'result_top' if clothing_type == '상의' else 'result_bottom'
+            response_data['redirect_url'] = url_for(redirect_endpoint,
+                                                    combined_recommendation_1=combinations[0],
+                                                    combined_recommendation_2=combinations[1],
+                                                    combined_recommendation_3=combinations[2],
+                                                    recommended_image_1=recommended_images[0],
+                                                    recommended_image_2=recommended_images[1],
+                                                    recommended_image_3=recommended_images[2],
+                                                    label_korean=clothing_label_korean,
+                                                    color_korean=color_label_korean,
+                                                    _external=True)
 
-            else:
-                return jsonify({
-                    'success': True,
-                    'label': clothing_label,
-                    'color': color_label,
-                    'combined_recommendation_1': combinations[0],
-                    'combined_recommendation_2': combinations[1],
-                    'combined_recommendation_3': combinations[2],
-                    'image_url': image_url,
-                    'recommended_image_1': recommended_images[0],
-                    'recommended_image_2': recommended_images[1],
-                    'recommended_image_3': recommended_images[2],
-                    'redirect_url': url_for('result_bottom', 
-                                            combined_recommendation_1=combinations[0],
-                                            combined_recommendation_2=combinations[1],
-                                            combined_recommendation_3=combinations[2],
-                                            recommended_image_1=recommended_images[0],
-                                            recommended_image_2=recommended_images[1],
-                                            recommended_image_3=recommended_images[2],
-                                            label_korean=clothing_label_korean,
-                                            color_korean=color_label_korean,
-                                            _external=True)
-                })
+            return jsonify(response_data)
+        else:
+            app.logger.error('허용되지 않는 파일 형식입니다.')
+            return jsonify({'success': False, 'error': '허용되지 않는 파일 형식입니다.'}), 400
     except Exception as e:
         app.logger.error(f"서버 내부 오류 발생: {e}")
-        return jsonify({'success': False, 'error': '서버 내부 오류입니다.'}), 500
+        return jsonify({'success': False, 'error': f'서버 내부 오류입니다: {str(e)}'}), 500
+
 
 @app.route('/result/top')
 def result_top():
@@ -262,6 +247,10 @@ def result_top():
     recommended_image_1 = request.args.get('recommended_image_1')
     recommended_image_2 = request.args.get('recommended_image_2')
     recommended_image_3 = request.args.get('recommended_image_3')
+    
+    # label_korean과 color_korean 값을 명확히 가져옵니다.
+    label_korean = request.args.get('label_korean')
+    color_korean = request.args.get('color_korean')
 
     return render_template('top_analyze.html', 
                            combined_recommendation_1=combined_recommendation_1,
@@ -269,7 +258,9 @@ def result_top():
                            combined_recommendation_3=combined_recommendation_3,
                            recommended_image_1=recommended_image_1,
                            recommended_image_2=recommended_image_2,
-                           recommended_image_3=recommended_image_3)
+                           recommended_image_3=recommended_image_3,
+                           label_korean=label_korean,  # 템플릿에 전달
+                           color_korean=color_korean)  # 템플릿에 전달
 
 @app.route('/result/bottom')
 def result_bottom():
@@ -279,6 +270,10 @@ def result_bottom():
     recommended_image_1 = request.args.get('recommended_image_1')
     recommended_image_2 = request.args.get('recommended_image_2')
     recommended_image_3 = request.args.get('recommended_image_3')
+    
+    # label_korean과 color_korean 값을 명확히 가져옵니다.
+    label_korean = request.args.get('label_korean')
+    color_korean = request.args.get('color_korean')
 
     return render_template('bottom_analyze.html', 
                            combined_recommendation_1=combined_recommendation_1,
@@ -286,9 +281,13 @@ def result_bottom():
                            combined_recommendation_3=combined_recommendation_3,
                            recommended_image_1=recommended_image_1,
                            recommended_image_2=recommended_image_2,
-                           recommended_image_3=recommended_image_3)
+                           recommended_image_3=recommended_image_3,
+                           label_korean=label_korean,  # 템플릿에 전달
+                           color_korean=color_korean)  # 템플릿에 전달
+
 
 if __name__ == '__main__':
     if not os.path.exists(UPLOAD_FOLDER):
         os.makedirs(UPLOAD_FOLDER)
     app.run(debug=True)
+
