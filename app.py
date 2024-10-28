@@ -193,20 +193,9 @@ def analyze():
                 'recommended_image_1': recommended_images[0],
                 'recommended_image_2': recommended_images[1],
                 'recommended_image_3': recommended_images[2],
+                # URL에서는 label_korean과 color_korean을 사용하지 않음
+                'redirect_url': url_for('result_top' if clothing_type == '상의' else 'result_bottom', _external=True)
             }
-
-            # 리다이렉트 URL 설정
-            redirect_endpoint = 'result_top' if clothing_type == '상의' else 'result_bottom'
-            response_data['redirect_url'] = url_for(redirect_endpoint,
-                                                    combined_recommendation_1=combinations[0],
-                                                    combined_recommendation_2=combinations[1],
-                                                    combined_recommendation_3=combinations[2],
-                                                    recommended_image_1=recommended_images[0],
-                                                    recommended_image_2=recommended_images[1],
-                                                    recommended_image_3=recommended_images[2],
-                                                    label_korean=clothing_label_korean,
-                                                    color_korean=color_label_korean,
-                                                    _external=True)
 
             return jsonify(response_data)
         else:
@@ -216,7 +205,7 @@ def analyze():
         app.logger.error(f"서버 내부 오류 발생: {e}")
         return jsonify({'success': False, 'error': f'서버 내부 오류입니다: {str(e)}'}), 500
 
-
+# result_top 함수에서 직접 데이터 받기
 @app.route('/result/top')
 def result_top():
     combined_recommendation_1 = request.args.get('combined_recommendation_1')
@@ -226,7 +215,7 @@ def result_top():
     recommended_image_2 = request.args.get('recommended_image_2')
     recommended_image_3 = request.args.get('recommended_image_3')
     
-    # label_korean과 color_korean 값을 명확히 가져옵니다.
+    # label_korean과 color_korean 값 명확히 전달
     label_korean = request.args.get('label_korean')
     color_korean = request.args.get('color_korean')
 
@@ -237,9 +226,10 @@ def result_top():
                            recommended_image_1=recommended_image_1,
                            recommended_image_2=recommended_image_2,
                            recommended_image_3=recommended_image_3,
-                           label_korean=label_korean,  # 템플릿에 전달
-                           color_korean=color_korean)  # 템플릿에 전달
+                           label_korean=label_korean, 
+                           color_korean=color_korean)
 
+# result_bottom 함수도 동일하게 수정
 @app.route('/result/bottom')
 def result_bottom():
     combined_recommendation_1 = request.args.get('combined_recommendation_1')
@@ -249,7 +239,7 @@ def result_bottom():
     recommended_image_2 = request.args.get('recommended_image_2')
     recommended_image_3 = request.args.get('recommended_image_3')
     
-    # label_korean과 color_korean 값을 명확히 가져옵니다.
+    # label_korean과 color_korean 값 명확히 전달
     label_korean = request.args.get('label_korean')
     color_korean = request.args.get('color_korean')
 
@@ -260,9 +250,8 @@ def result_bottom():
                            recommended_image_1=recommended_image_1,
                            recommended_image_2=recommended_image_2,
                            recommended_image_3=recommended_image_3,
-                           label_korean=label_korean,  # 템플릿에 전달
-                           color_korean=color_korean)  # 템플릿에 전달
-
+                           label_korean=label_korean, 
+                           color_korean=color_korean)
 
 if __name__ == '__main__':
     if not os.path.exists(UPLOAD_FOLDER):
