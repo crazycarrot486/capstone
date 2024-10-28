@@ -7,7 +7,7 @@ from flask_cors import CORS
 import pandas as pd
 
 app = Flask(__name__, static_folder='static')
-CORS(app, resources={r"/*": {"origins": "https://fillout-closet.netlify.app/"}})
+CORS(app, resources={r"/*": {"origins": "https://fillout-closet.netlify.app/"}})  # Netlify URL을 허용
 UPLOAD_FOLDER = os.path.join(app.root_path, 'static', 'uploads')
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'webp'}
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
@@ -26,37 +26,21 @@ clothing_recommendation_df = pd.read_excel(clothing_recommendation_file, sheet_n
 color_recommendation_df = pd.read_excel(color_recommendation_file, sheet_name='Sheet1')
 image_df = pd.read_excel(image_recommendation_file, sheet_name='Final')
 
-# 옷과 색상 번역 함수 추가
+# 한국어 번역 함수
 def translate_to_korean(label):
     translation_dict = {
-        "shirt": "셔츠",
-        "T-shirt": "티셔츠",
-        "polo": "폴로티",
-        "suit jacket": "블레이저",
-        "knitwear": "니트",
-        "jacket": "재킷",
-        "coat": "코트",
-        "hoodie": "후드",
-        "sweat shirt": "맨투맨",
-        "cotton pants": "면바지",
-        "sweat pants": "스웻 팬츠",
-        "denim pants": "청바지",
-        "cargo pants": "카고 팬츠",
-        "shorts": "쇼츠",
-        "dress pants": "슬랙스"
+        "shirt": "셔츠", "T-shirt": "티셔츠", "polo": "폴로티", "suit jacket": "블레이저",
+        "knitwear": "니트", "jacket": "재킷", "coat": "코트", "hoodie": "후드",
+        "sweat shirt": "맨투맨", "cotton pants": "면바지", "sweat pants": "스웻 팬츠",
+        "denim pants": "청바지", "cargo pants": "카고 팬츠", "shorts": "쇼츠", "dress pants": "슬랙스"
     }
     return translation_dict.get(label, label)
 
 def translate_color_to_korean(color_label):
     color_translation_dict = {
-        "blue clothes": "파란색",
-        "black clothes": "검은색",
-        "red clothes": "빨간색",
-        "white clothes": "흰색",
-        "grey clothes": "그레이색",
-        "beige clothes": "베이지색",
-        "green clothes": "초록색",
-        "navy clothes": "남색"
+        "blue clothes": "파란색", "black clothes": "검은색", "red clothes": "빨간색",
+        "white clothes": "흰색", "grey clothes": "그레이색", "beige clothes": "베이지색",
+        "green clothes": "초록색", "navy clothes": "남색"
     }
     return color_translation_dict.get(color_label, color_label)
 
@@ -92,7 +76,6 @@ def get_top_recommendations(clothing_item, df):
         return ['추천 결과 없음'] * 3
 
     filtered_df = df[df['antecedents'].str.contains(clothing_item, case=False, na=False)]
-    
     if filtered_df.empty:
         return ['추천 결과 없음'] * 3
 
@@ -112,68 +95,64 @@ def uploaded_file(filename):
 # 옷 종류와 색상을 기준으로 이미지 찾기
 def find_matching_images_for_combinations(combinations, df, clothing_type, analyzed_clothing, analyzed_color):
     matched_images = []
-    
+
     if clothing_type == '상의':
         category_column = 'Max Top Category'
         color_column = '1st Color'
         recommendation_category_column = 'Max Bottom Category'
         recommendation_color_column = '2nd Color'
-    
     else:
         category_column = 'Max Bottom Category'
         color_column = '2nd Color'
         recommendation_category_column = 'Max Top Category'
         recommendation_color_column = '1st Color'
-    
+
     for combo in combinations:
         clothing_type, color = combo
-        
-        # 추천된 조합뿐만 아니라 분석된 의류 종류와 색상도 함께 매칭
         matched_row = df[
             (df[category_column] == analyzed_clothing) & 
             (df[color_column] == analyzed_color) & 
             (df[recommendation_category_column] == clothing_type) & 
             (df[recommendation_color_column] == color)
         ]
-        
+
         if not matched_row.empty:
             image_name = matched_row.iloc[0]['image']
             matched_images.append(get_image_url(image_name))
             app.logger.info(f"추천된 이미지: {image_name}, 분석된 의류 종류: {analyzed_clothing}, 분석된 색상: {analyzed_color}, 추천된 의류: {clothing_type}, 추천된 색상: {color}")
-        
+
         if len(matched_images) == 3:
             break
 
     while len(matched_images) < 3:
         matched_images.append('/static/default_image.jpg')
-    
+
     return matched_images
+
+@app.route('/')
+def index():
+    return render_template('index.html')
 
 @app.route('/analyze', methods=['POST'])
 def analyze():
     try:
-        # 파일과 의류 종류가 전송되었는지 확인
         if 'file' not in request.files or 'clothing-type' not in request.form:
             return jsonify({'success': False, 'error': '파일 또는 의류 종류가 선택되지 않았습니다.'}), 400
 
         file = request.files['file']
         clothing_type = request.form['clothing-type']
 
-        # 파일 유효성 검사
         if file and allowed_file(file.filename):
             filename = secure_filename(file.filename)
             filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
             file.save(filepath)
 
-            # 의류 종류에 따른 분석 후보 설정
-            candidate_labels = ["shirt", "T-shirt", "polo", "suit jacket", "knitwear", "jacket", "coat", "hoodie", "sweat shirt"] if clothing_type == "상의" else ["cotton pants", "sweat pants", "denim pants", "cargo pants", "shorts", "dress pants"]
-
             # 의류 종류 분석
+            candidate_labels = ["shirt", "T-shirt", "polo", "suit jacket", "knitwear", "jacket", "coat", "hoodie", "sweat shirt"] if clothing_type == "상의" else ["cotton pants", "sweat pants", "denim pants", "cargo pants", "shorts", "dress pants"]
             output = query_fashion_clip(filepath, candidate_labels)
             if output is None:
                 return jsonify({'success': False, 'error': 'API 요청에 실패했습니다.'})
 
-            # 분석된 의류 종류 저장 및 한국어 변환
             clothing_label = get_top_label(output)
             clothing_label_korean = translate_to_korean(clothing_label)
             app.logger.info(f"분석된 의류 종류: {clothing_label} -> {clothing_label_korean}")
@@ -184,12 +163,11 @@ def analyze():
             if color_output is None:
                 return jsonify({'success': False, 'error': '색상 분석 요청에 실패했습니다.'})
 
-            # 분석된 색상 저장 및 한국어 변환
             color_label = get_top_label(color_output)
             color_label_korean = translate_color_to_korean(color_label)
             app.logger.info(f"분석된 색상: {color_label} -> {color_label_korean}")
 
-            # 의류 및 색상 추천 데이터 생성
+            # 의류 및 색상 추천 결과 가져오기
             clothing_recommendations = get_top_recommendations(clothing_label, clothing_recommendation_df)
             color_recommendations = get_top_recommendations(color_label, color_recommendation_df)
 
@@ -290,4 +268,3 @@ if __name__ == '__main__':
     if not os.path.exists(UPLOAD_FOLDER):
         os.makedirs(UPLOAD_FOLDER)
     app.run(debug=True)
-
