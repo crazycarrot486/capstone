@@ -241,6 +241,9 @@ def analyze():
 
 @app.route('/result/top')
 def result_top():
+    label_korean = request.args.get('label_korean')
+    color_korean = request.args.get('color_korean')
+    app.logger.info(f"Result Top - label_korean: {label_korean}, color_korean: {color_korean}")
     combined_recommendation_1 = request.args.get('combined_recommendation_1')
     combined_recommendation_2 = request.args.get('combined_recommendation_2')
     combined_recommendation_3 = request.args.get('combined_recommendation_3')
@@ -264,6 +267,9 @@ def result_top():
 
 @app.route('/result/bottom')
 def result_bottom():
+    label_korean = request.args.get('label_korean')
+    color_korean = request.args.get('color_korean')
+    app.logger.info(f"Result Top - label_korean: {label_korean}, color_korean: {color_korean}")
     combined_recommendation_1 = request.args.get('combined_recommendation_1')
     combined_recommendation_2 = request.args.get('combined_recommendation_2')
     combined_recommendation_3 = request.args.get('combined_recommendation_3')
