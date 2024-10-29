@@ -7,7 +7,7 @@ from flask_cors import CORS
 import pandas as pd
 
 app = Flask(__name__, static_folder='static')
-CORS(app, resources={r"/*": {"https://fillout-closet.netlify.app"}})
+CORS(app, resources={r"/*": {"origins": ["https://fillout-closet.netlify.app"]}}) # Netlify URL을 허용
 UPLOAD_FOLDER = os.path.join(app.root_path, 'static', 'uploads')
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'webp'}
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
@@ -205,7 +205,8 @@ def analyze():
         app.logger.error(f"서버 내부 오류 발생: {e}")
         return jsonify({'success': False, 'error': f'서버 내부 오류입니다: {str(e)}'}), 500
 
-# result_top 함수에서 직접 데이터 받기
+
+
 @app.route('/result/top')
 def result_top():
     combined_recommendation_1 = request.args.get('combined_recommendation_1')
