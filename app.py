@@ -250,8 +250,8 @@ def result_top():
     recommended_image_3 = request.args.get('recommended_image_3')
     
     # label_korean과 color_korean 값 로깅
-    label_korean = request.args.get('label_korean')
-    color_korean = request.args.get('color_korean')
+    label_korean = request.args.get('label_korean', '니트')
+    color_korean = request.args.get('color_korean', '초록색')
     app.logger.info(f"label_korean: {label_korean}, color_korean: {color_korean}")
 
     return render_template('top_analyze.html', 
@@ -261,8 +261,8 @@ def result_top():
                            recommended_image_1=recommended_image_1,
                            recommended_image_2=recommended_image_2,
                            recommended_image_3=recommended_image_3,
-                           label_korean=label_korean or "기본 의류",
-                           color_korean=color_korean or "기본 색상")
+                           label_korean=label_korean,
+                           color_korean=color_korean)
 
 @app.route('/result/bottom')
 def result_bottom():
