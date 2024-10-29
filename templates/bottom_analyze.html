@@ -43,6 +43,9 @@
         }
 
         .container {
+            text-align: center;
+            font-size: 32px;
+            margin: 30px 0;
             max-width: 800px;
             margin: 0 auto;
             padding: 50px 20px;
@@ -97,8 +100,9 @@
     </div>
 
     <div class="sub-title">
-        <h2>AI Closet이 추천하는 코디입니다!</h2>
+        <h2>AI Closet이 추천하는 {{ color_korean | default("초록색") }} {{ label_korean | default("니트") }} 코디입니다!</h2>
     </div>
+    
 
     <div class="container">
         <div class="image-box">
