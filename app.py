@@ -7,7 +7,7 @@ from flask_cors import CORS
 import pandas as pd
 
 app = Flask(__name__, static_folder='static')
-CORS(app, resources={r"/*": {"origins": "https://fill-closet.netlify.app"}})
+CORS(app)
 UPLOAD_FOLDER = os.path.join(app.root_path, 'static', 'uploads')
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'webp'}
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
@@ -248,21 +248,19 @@ def result_top():
     recommended_image_2 = request.args.get('recommended_image_2')
     recommended_image_3 = request.args.get('recommended_image_3')
     
-    # 기본값으로 설정하여 하드코딩된 텍스트를 유지
-    label_korean = request.args.get('label_korean', "초록색")
-    color_korean = request.args.get('color_korean', "니트")
+    # label_korean과 color_korean 값을 명확히 가져옵니다.
+    label_korean = request.args.get('label_korean')
+    color_korean = request.args.get('color_korean')
 
-    return render_template(
-        'top_analyze.html', 
-        combined_recommendation_1=combined_recommendation_1,
-        combined_recommendation_2=combined_recommendation_2,
-        combined_recommendation_3=combined_recommendation_3,
-        recommended_image_1=recommended_image_1,
-        recommended_image_2=recommended_image_2,
-        recommended_image_3=recommended_image_3,
-        label_korean=label_korean,  # 하드코딩된 기본값을 설정
-        color_korean=color_korean   # 하드코딩된 기본값을 설정
-    )
+    return render_template('top_analyze.html', 
+                           combined_recommendation_1=combined_recommendation_1,
+                           combined_recommendation_2=combined_recommendation_2,
+                           combined_recommendation_3=combined_recommendation_3,
+                           recommended_image_1=recommended_image_1,
+                           recommended_image_2=recommended_image_2,
+                           recommended_image_3=recommended_image_3,
+                           label_korean=label_korean,  # 템플릿에 전달
+                           color_korean=color_korean)  # 템플릿에 전달
 
 @app.route('/result/bottom')
 def result_bottom():
@@ -273,21 +271,19 @@ def result_bottom():
     recommended_image_2 = request.args.get('recommended_image_2')
     recommended_image_3 = request.args.get('recommended_image_3')
     
-    # 기본값 설정
-    label_korean = request.args.get('label_korean', "초록색")
-    color_korean = request.args.get('color_korean', "니트")
+    # label_korean과 color_korean 값을 명확히 가져옵니다.
+    label_korean = request.args.get('label_korean')
+    color_korean = request.args.get('color_korean')
 
-    return render_template(
-        'bottom_analyze.html', 
-        combined_recommendation_1=combined_recommendation_1,
-        combined_recommendation_2=combined_recommendation_2,
-        combined_recommendation_3=combined_recommendation_3,
-        recommended_image_1=recommended_image_1,
-        recommended_image_2=recommended_image_2,
-        recommended_image_3=recommended_image_3,
-        label_korean=label_korean,  # 하드코딩된 기본값을 설정
-        color_korean=color_korean   # 하드코딩된 기본값을 설정
-    )
+    return render_template('bottom_analyze.html', 
+                           combined_recommendation_1=combined_recommendation_1,
+                           combined_recommendation_2=combined_recommendation_2,
+                           combined_recommendation_3=combined_recommendation_3,
+                           recommended_image_1=recommended_image_1,
+                           recommended_image_2=recommended_image_2,
+                           recommended_image_3=recommended_image_3,
+                           label_korean=label_korean,  # 템플릿에 전달
+                           color_korean=color_korean)  # 템플릿에 전달
 
 
 if __name__ == '__main__':
