@@ -152,53 +152,85 @@ def find_matching_images_for_combinations(combinations, df, clothing_type, analy
 @app.route('/analyze', methods=['POST'])
 def analyze():
     try:
+        # 파일과 의류 종류가 전송되었는지 확인
         if 'file' not in request.files or 'clothing-type' not in request.form:
             return jsonify({'success': False, 'error': '파일 또는 의류 종류가 선택되지 않았습니다.'}), 400
 
         file = request.files['file']
         clothing_type = request.form['clothing-type']
 
+        # 파일 유효성 검사
         if file and allowed_file(file.filename):
             filename = secure_filename(file.filename)
             filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
             file.save(filepath)
 
+            # 의류 종류에 따른 분석 후보 설정
             candidate_labels = ["shirt", "T-shirt", "polo", "suit jacket", "knitwear", "jacket", "coat", "hoodie", "sweat shirt"] if clothing_type == "상의" else ["cotton pants", "sweat pants", "denim pants", "cargo pants", "shorts", "dress pants"]
 
+            # 의류 종류 분석
             output = query_fashion_clip(filepath, candidate_labels)
             if output is None:
                 return jsonify({'success': False, 'error': 'API 요청에 실패했습니다.'})
 
+            # 분석된 의류 종류 저장 및 한국어 변환
             clothing_label = get_top_label(output)
             clothing_label_korean = translate_to_korean(clothing_label)
+            app.logger.info(f"분석된 의류 종류: {clothing_label} -> {clothing_label_korean}")
 
+            # 색상 분석
             color_labels = ["blue clothes", "black clothes", "red clothes", "white clothes", "grey clothes", "beige clothes", "green clothes", "navy clothes"]
             color_output = query_fashion_clip(filepath, color_labels)
             if color_output is None:
                 return jsonify({'success': False, 'error': '색상 분석 요청에 실패했습니다.'})
 
+            # 분석된 색상 저장 및 한국어 변환
             color_label = get_top_label(color_output)
             color_label_korean = translate_color_to_korean(color_label)
+            app.logger.info(f"분석된 색상: {color_label} -> {color_label_korean}")
 
+            # 의류 및 색상 추천 데이터 생성
             clothing_recommendations = get_top_recommendations(clothing_label, clothing_recommendation_df)
             color_recommendations = get_top_recommendations(color_label, color_recommendation_df)
 
+            # 추천 조합 생성 (9가지)
             combinations = [(clothing_recommendations[i], color_recommendations[j]) for i in range(3) for j in range(3)]
-            recommended_images = find_matching_images_for_combinations(combinations, image_df, clothing_type, clothing_label, color_label)
+            app.logger.info(f"생성된 조합: {combinations}")
 
-            # 직접 템플릿 렌더링
-            return render_template(
-                'top_analyze.html' if clothing_type == '상의' else 'bottom_analyze.html',
-                combined_recommendation_1=combinations[0],
-                combined_recommendation_2=combinations[1],
-                combined_recommendation_3=combinations[2],
-                recommended_image_1=recommended_images[0],
-                recommended_image_2=recommended_images[1],
-                recommended_image_3=recommended_images[2],
-                label_korean=clothing_label_korean,
-                color_korean=color_label_korean,
-                image_url=f"/uploads/{filename}"
-            )
+            # 추천 이미지 찾기 (분석된 의류 종류와 색상도 함께 고려)
+            recommended_images = find_matching_images_for_combinations(combinations, image_df, clothing_type, clothing_label, color_label)
+            app.logger.info(f"추천된 이미지 URL: {recommended_images}")
+
+            # 분석 결과에 대한 JSON 응답 생성
+            response_data = {
+                'success': True,
+                'label': clothing_label,
+                'label_korean': clothing_label_korean,
+                'color': color_label,
+                'color_korean': color_label_korean,
+                'combined_recommendation_1': combinations[0],
+                'combined_recommendation_2': combinations[1],
+                'combined_recommendation_3': combinations[2],
+                'image_url': f"/uploads/{filename}",
+                'recommended_image_1': recommended_images[0],
+                'recommended_image_2': recommended_images[1],
+                'recommended_image_3': recommended_images[2],
+            }
+
+            # 리다이렉트 URL 설정
+            redirect_endpoint = 'result_top' if clothing_type == '상의' else 'result_bottom'
+            response_data['redirect_url'] = url_for(redirect_endpoint,
+                                                    combined_recommendation_1=combinations[0],
+                                                    combined_recommendation_2=combinations[1],
+                                                    combined_recommendation_3=combinations[2],
+                                                    recommended_image_1=recommended_images[0],
+                                                    recommended_image_2=recommended_images[1],
+                                                    recommended_image_3=recommended_images[2],
+                                                    label_korean=clothing_label_korean,
+                                                    color_korean=color_label_korean,
+                                                    _external=True)
+
+            return jsonify(response_data)
         else:
             app.logger.error('허용되지 않는 파일 형식입니다.')
             return jsonify({'success': False, 'error': '허용되지 않는 파일 형식입니다.'}), 400
@@ -207,7 +239,54 @@ def analyze():
         return jsonify({'success': False, 'error': f'서버 내부 오류입니다: {str(e)}'}), 500
 
 
+@app.route('/result/top')
+def result_top():
+    combined_recommendation_1 = request.args.get('combined_recommendation_1')
+    combined_recommendation_2 = request.args.get('combined_recommendation_2')
+    combined_recommendation_3 = request.args.get('combined_recommendation_3')
+    recommended_image_1 = request.args.get('recommended_image_1')
+    recommended_image_2 = request.args.get('recommended_image_2')
+    recommended_image_3 = request.args.get('recommended_image_3')
+    
+    # label_korean과 color_korean 값을 명확히 가져옵니다.
+    label_korean = request.args.get('label_korean')
+    color_korean = request.args.get('color_korean')
+
+    return render_template('top_analyze.html', 
+                           combined_recommendation_1=combined_recommendation_1,
+                           combined_recommendation_2=combined_recommendation_2,
+                           combined_recommendation_3=combined_recommendation_3,
+                           recommended_image_1=recommended_image_1,
+                           recommended_image_2=recommended_image_2,
+                           recommended_image_3=recommended_image_3,
+                           label_korean=label_korean,  # 템플릿에 전달
+                           color_korean=color_korean)  # 템플릿에 전달
+
+@app.route('/result/bottom')
+def result_bottom():
+    combined_recommendation_1 = request.args.get('combined_recommendation_1')
+    combined_recommendation_2 = request.args.get('combined_recommendation_2')
+    combined_recommendation_3 = request.args.get('combined_recommendation_3')
+    recommended_image_1 = request.args.get('recommended_image_1')
+    recommended_image_2 = request.args.get('recommended_image_2')
+    recommended_image_3 = request.args.get('recommended_image_3')
+    
+    # label_korean과 color_korean 값을 명확히 가져옵니다.
+    label_korean = request.args.get('label_korean')
+    color_korean = request.args.get('color_korean')
+
+    return render_template('bottom_analyze.html', 
+                           combined_recommendation_1=combined_recommendation_1,
+                           combined_recommendation_2=combined_recommendation_2,
+                           combined_recommendation_3=combined_recommendation_3,
+                           recommended_image_1=recommended_image_1,
+                           recommended_image_2=recommended_image_2,
+                           recommended_image_3=recommended_image_3,
+                           label_korean=label_korean,  # 템플릿에 전달
+                           color_korean=color_korean)  # 템플릿에 전달
+
+
 if __name__ == '__main__':
     if not os.path.exists(UPLOAD_FOLDER):
         os.makedirs(UPLOAD_FOLDER)
-    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
+    app.run(debug=True)
