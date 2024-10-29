@@ -241,20 +241,17 @@ def analyze():
 
 @app.route('/result/top')
 def result_top():
-    label_korean = request.args.get('label_korean')
-    color_korean = request.args.get('color_korean')
-    app.logger.info(f"Result Top - label_korean: {label_korean}, color_korean: {color_korean}")
+    # 템플릿으로 전달할 변수들을 명확히 가져옵니다.
     combined_recommendation_1 = request.args.get('combined_recommendation_1')
     combined_recommendation_2 = request.args.get('combined_recommendation_2')
     combined_recommendation_3 = request.args.get('combined_recommendation_3')
     recommended_image_1 = request.args.get('recommended_image_1')
     recommended_image_2 = request.args.get('recommended_image_2')
     recommended_image_3 = request.args.get('recommended_image_3')
-    
-    # label_korean과 color_korean 값을 명확히 가져옵니다.
     label_korean = request.args.get('label_korean')
     color_korean = request.args.get('color_korean')
 
+    # Flask의 템플릿으로 필요한 값을 전달합니다.
     return render_template('top_analyze.html', 
                            combined_recommendation_1=combined_recommendation_1,
                            combined_recommendation_2=combined_recommendation_2,
@@ -262,25 +259,22 @@ def result_top():
                            recommended_image_1=recommended_image_1,
                            recommended_image_2=recommended_image_2,
                            recommended_image_3=recommended_image_3,
-                           label_korean=label_korean,  # 템플릿에 전달
-                           color_korean=color_korean)  # 템플릿에 전달
+                           label_korean=label_korean,  
+                           color_korean=color_korean)
 
 @app.route('/result/bottom')
 def result_bottom():
-    label_korean = request.args.get('label_korean')
-    color_korean = request.args.get('color_korean')
-    app.logger.info(f"Result Top - label_korean: {label_korean}, color_korean: {color_korean}")
+    # 템플릿으로 전달할 변수들을 명확히 가져옵니다.
     combined_recommendation_1 = request.args.get('combined_recommendation_1')
     combined_recommendation_2 = request.args.get('combined_recommendation_2')
     combined_recommendation_3 = request.args.get('combined_recommendation_3')
     recommended_image_1 = request.args.get('recommended_image_1')
     recommended_image_2 = request.args.get('recommended_image_2')
     recommended_image_3 = request.args.get('recommended_image_3')
-    
-    # label_korean과 color_korean 값을 명확히 가져옵니다.
     label_korean = request.args.get('label_korean')
     color_korean = request.args.get('color_korean')
 
+    # Flask의 템플릿으로 필요한 값을 전달합니다.
     return render_template('bottom_analyze.html', 
                            combined_recommendation_1=combined_recommendation_1,
                            combined_recommendation_2=combined_recommendation_2,
@@ -288,8 +282,8 @@ def result_bottom():
                            recommended_image_1=recommended_image_1,
                            recommended_image_2=recommended_image_2,
                            recommended_image_3=recommended_image_3,
-                           label_korean=label_korean,  # 템플릿에 전달
-                           color_korean=color_korean)  # 템플릿에 전달
+                           label_korean=label_korean,  
+                           color_korean=color_korean)
 
 
 if __name__ == '__main__':
