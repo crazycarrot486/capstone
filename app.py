@@ -180,22 +180,29 @@ def analyze():
             app.logger.info(f"추천된 이미지 URL: {recommended_images}")
 
             # 분석 결과에 대한 JSON 응답 생성
-            response_data = {
-                'success': True,
-                'label': clothing_label,
-                'label_korean': clothing_label_korean,
-                'color': color_label,
-                'color_korean': color_label_korean,
-                'combined_recommendation_1': combinations[0],
-                'combined_recommendation_2': combinations[1],
-                'combined_recommendation_3': combinations[2],
-                'image_url': f"/uploads/{filename}",
-                'recommended_image_1': recommended_images[0],
-                'recommended_image_2': recommended_images[1],
-                'recommended_image_3': recommended_images[2],
-                # URL에서는 label_korean과 color_korean을 사용하지 않음
-                'redirect_url': url_for('result_top' if clothing_type == '상의' else 'result_bottom', _external=True)
-            }
+             response_data = {
+    'success': True,
+    'label': clothing_label,
+    'label_korean': clothing_label_korean,
+    'color': color_label,
+    'color_korean': color_label_korean,
+    'combined_recommendation_1': combinations[0],
+    'combined_recommendation_2': combinations[1],
+    'combined_recommendation_3': combinations[2],
+    'image_url': f"/uploads/{filename}",
+    'recommended_image_1': recommended_images[0],
+    'recommended_image_2': recommended_images[1],
+    'recommended_image_3': recommended_images[2],
+    'redirect_url': url_for(
+        'result_top' if clothing_type == '상의' else 'result_bottom',
+        label_korean=clothing_label_korean,
+        color_korean=color_label_korean,
+        recommended_image_1=recommended_images[0],
+        recommended_image_2=recommended_images[1],
+        recommended_image_3=recommended_images[2],
+        _external=True
+    )
+}
 
             return jsonify(response_data)
         else:
