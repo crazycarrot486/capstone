@@ -6,7 +6,7 @@
     <title>AI Closet</title>
 
     <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@700&display=swap/analyze" rel="stylesheet">
 
     <style>
         body, h1, h2, p, label, input, button {
@@ -191,12 +191,11 @@
         analyzeBtn.addEventListener('click', () => {
             const formData = new FormData(document.getElementById('upload-form'));
 
-            fetch('http://localhost:5000/analyze', {
+            fetch('https://port-0-cap-m2bws2skfe38bed2.sel4.cloudtype.app', {
                 method: 'POST',
                 body: formData,
                 headers: {
-                    'Accept': 'application/json',
-                    'X-Requested-With': 'XMLHttpRequest'
+                    'Accept': 'application/json'
                 }
             })
             .then(response => {
@@ -207,7 +206,15 @@
             })
             .then(data => {
                 if (data.success) {
-                    window.location.href = data.redirect_url;
+                    const labelKorean = data.label_korean || "의류";
+                    const colorKorean = data.color_korean || "";
+                    const redirectURL = `${data.redirect_url}&label_korean=${encodeURIComponent(labelKorean)}&color_korean=${encodeURIComponent(colorKorean)}`;
+
+                    // Redirect URL을 콘솔에 출력하여 확인합니다.
+                    console.log(`Redirecting to URL: ${redirectURL}`);
+                    
+                    // 페이지 이동
+                    window.location.href = redirectURL;
                 } else {
                     alert(`분석 중 오류가 발생했습니다: ${data.error}`);
                 }
