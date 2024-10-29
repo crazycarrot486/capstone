@@ -252,15 +252,17 @@ def result_top():
     label_korean = request.args.get('label_korean')
     color_korean = request.args.get('color_korean')
 
-    return render_template('top_analyze.html', 
-                           combined_recommendation_1=combined_recommendation_1,
-                           combined_recommendation_2=combined_recommendation_2,
-                           combined_recommendation_3=combined_recommendation_3,
-                           recommended_image_1=recommended_image_1,
-                           recommended_image_2=recommended_image_2,
-                           recommended_image_3=recommended_image_3,
-                           label_korean=label_korean,  # 템플릿에 전달
-                           color_korean=color_korean)  # 템플릿에 전달
+    return render_template(
+        'top_analyze.html' if clothing_type == '상의' else 'bottom_analyze.html',
+        combined_recommendation_1=combinations[0],
+        combined_recommendation_2=combinations[1],
+        combined_recommendation_3=combinations[2],
+        recommended_image_1=recommended_images[0],
+        recommended_image_2=recommended_images[1],
+        recommended_image_3=recommended_images[2],
+        label_korean=clothing_label_korean,
+        color_korean=color_label_korean,
+        image_url=f"/uploads/{filename}"
 
 @app.route('/result/bottom')
 def result_bottom():
