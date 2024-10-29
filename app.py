@@ -288,6 +288,18 @@ def result_bottom():
                            recommended_image_3=recommended_image_3,
                            label_korean=label_korean or "기본 의류",
                            color_korean=color_korean or "기본 색상")
+    
+@app.route('/api/get_result', methods=['GET'])
+def get_result():
+    # 분석 결과를 JSON 형식으로 반환
+    data = {
+        'label_korean': request.args.get('label_korean', "기본 의류"),
+        'color_korean': request.args.get('color_korean', "기본 색상"),
+        'recommended_image_1': request.args.get('recommended_image_1'),
+        'recommended_image_2': request.args.get('recommended_image_2'),
+        'recommended_image_3': request.args.get('recommended_image_3')
+    }
+    return jsonify(data)
 
 
 if __name__ == '__main__':
