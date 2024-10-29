@@ -4,7 +4,7 @@ import requests
 from flask import Flask, request, jsonify, url_for, send_from_directory, render_template
 from werkzeug.utils import secure_filename
 from flask_cors import CORS
-import pandas as pd
+import pandas as pd 
 
 app = Flask(__name__, static_folder='static')
 CORS(app, resources={r"/*": {"origins": "https://fill-closet.netlify.app"}})
